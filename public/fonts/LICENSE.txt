@@ -1,0 +1,10 @@
+S-Core Dream font
+
+Copyright (c) S-Core Co., Ltd. All rights reserved.
+
+S-Core fonts are free of charge to all users, including individuals and
+businesses, and may be redistributed. The fonts may not be modified or sold.
+This project uses the unmodified S-Core Dream webfont files distributed by
+S-Core and mirrored by the Noonnu font archive.
+
+Official information: https://www.s-core.co.kr/company/font/
