@@ -180,7 +180,7 @@ button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-vis
 html,body{width:100%;max-width:100%;overflow-x:hidden}
 .access-screen,.forensics-app{max-width:100%}
 .access-screen :where(h1,h2,h3,p,b,strong,span,button,li,small),.forensics-app :where(h1,h2,h3,p,b,strong,span,button,label,li,dt,dd,small){word-break:keep-all;overflow-wrap:normal;hyphens:none}
-.access-screen :where(.lab-index,.access-system-label),.forensics-app :where(.priority-label,.mission-heading>span,.folder-tab,.rec-indicator,.binary-strip,.deleted-file-row small){word-break:normal;overflow-wrap:anywhere}
+.access-screen .access-system-label,.forensics-app :where(.priority-label,.mission-heading>span,.folder-tab,.rec-indicator,.binary-strip,.deleted-file-row small){word-break:normal;overflow-wrap:anywhere}
 .forensics-app :where(.scene>*,.mission-heading,.briefing-copy,.briefing-video,.case-folder,.evidence-bag-wrap,.pin-terminal,.search-brief,.search-active,.analysis-console,.console-main,.recovery-layout,.recovery-terminal,.metadata-workbench,.photo-inspector,.metadata-panel,.frame-lab,.frame-notes,.timeline-workspace,.report-document,.report-section>div){min-width:0}
 .mission-heading h1,.briefing-copy h1 small,.case-paper h1,.report-header h2,.career-hero h1,.reconstruction-title h1{text-wrap:balance}
 .mission-heading p,.briefing-copy>p,.case-summary,.briefing-caption p,.analysis-feedback{text-wrap:pretty}
