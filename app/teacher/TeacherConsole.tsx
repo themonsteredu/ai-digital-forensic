@@ -9,8 +9,26 @@ import {
   TIME_PRESETS,
 } from "../data";
 import CasePreparationCenter from "./CasePreparationCenter";
+import {
+  AnswerCenter,
+  CaseManagement,
+  MaterialsCenter,
+  StudentPreviewDirectory,
+  TeacherHome,
+} from "./TeacherManagementViews";
+import { TEACHER_ACCESS_CODE } from "./teacherData";
 
-type TeacherView = "control" | "guide" | "slides" | "setup";
+type TeacherView =
+  | "home"
+  | "setup"
+  | "preview"
+  | "control"
+  | "materials"
+  | "guide"
+  | "slides"
+  | "answers"
+  | "case-management";
+type ResetScope = "case" | "prep" | "records";
 type GroupRecord = {
   group: number;
   stage: string;
@@ -110,7 +128,7 @@ export default function TeacherConsole() {
   const [authenticated, setAuthenticated] = useState(false);
   const [accessCode, setAccessCode] = useState("");
   const [accessError, setAccessError] = useState("");
-  const [view, setView] = useState<TeacherView>("control");
+  const [view, setView] = useState<TeacherView>("home");
   const [groups, setGroups] = useState<GroupRecord[]>([]);
   const [duration, setDuration] = useState<keyof typeof TIME_PRESETS>(60);
   const [guideOpen, setGuideOpen] = useState(0);
@@ -120,6 +138,9 @@ export default function TeacherConsole() {
   const [hintSent, setHintSent] = useState("");
   const [resetOpen, setResetOpen] = useState(false);
   const [resetChecked, setResetChecked] = useState(false);
+  const [resetScope, setResetScope] = useState<ResetScope>("case");
+  const [resetCode, setResetCode] = useState("");
+  const [resetError, setResetError] = useState("");
 
   const times = useMemo(() => TIME_PRESETS[duration], [duration]);
 
@@ -144,8 +165,9 @@ export default function TeacherConsole() {
   }, [authenticated]);
 
   function unlock() {
-    if (accessCode.trim().toUpperCase() !== "017-LAB") {
-      setAccessError("교사용 접근 코드를 다시 확인하십시오.");
+    if (accessCode !== TEACHER_ACCESS_CODE) {
+      setAccessError("접근코드를 확인해 주세요.");
+      setAccessCode("");
       return;
     }
     window.sessionStorage.setItem("df-teacher-auth", "true");
@@ -164,18 +186,53 @@ export default function TeacherConsole() {
     window.setTimeout(() => setHintSent(""), 2500);
   }
 
+  function openReset(scope: ResetScope) {
+    setResetScope(scope);
+    setResetChecked(false);
+    setResetCode("");
+    setResetError("");
+    setResetOpen(true);
+  }
+
   function resetCase() {
     if (!resetChecked) return;
+    if (resetCode !== TEACHER_ACCESS_CODE) {
+      setResetError("접근코드를 확인해 주세요.");
+      setResetCode("");
+      return;
+    }
     const keys: string[] = [];
     for (let index = 0; index < window.localStorage.length; index += 1) {
       const key = window.localStorage.key(index);
-      if (key?.startsWith("df-")) keys.push(key);
+      if (!key) continue;
+      const isGroupRecord = key.startsWith("df-group-") || key.startsWith("df-hint-");
+      const isStudentCase = ["df-stage", "df-evidence", "df-group-id"].includes(key) || isGroupRecord;
+      const isPreparation = ["df-case017-prep-checks-v1", "df-case017-prep-steps-v1"].includes(key);
+      if (
+        (resetScope === "case" && isStudentCase) ||
+        (resetScope === "prep" && isPreparation) ||
+        (resetScope === "records" && isGroupRecord)
+      ) keys.push(key);
     }
     keys.forEach((key) => window.localStorage.removeItem(key));
     setGroups(readGroups());
     setResetOpen(false);
     setResetChecked(false);
+    setResetCode("");
+    setResetError("");
   }
+
+  const viewTitle: Record<TeacherView, string> = {
+    home: "CASE 017 교사용 관리센터",
+    setup: "CASE 017 수업 준비센터",
+    preview: "학생 화면 미리보기",
+    control: "수업 진행 관리",
+    materials: "CASE 017 수업자료",
+    guide: "교사용 수업지도안",
+    slides: "디지털 포렌식 내장 PPT",
+    answers: "교사용 사건 정답",
+    "case-management": "CASE 017 사건 관리",
+  };
 
   if (!authenticated) {
     return (
@@ -183,22 +240,29 @@ export default function TeacherConsole() {
         <div className="teacher-login-grid" />
         <section>
           <span>INSTRUCTOR ACCESS · CASE 017</span>
-          <h1>교사용 수사 통제실</h1>
-          <p>학생 화면과 분리된 교사용 전용 접근 경로입니다.</p>
-          <label htmlFor="teacher-code">교사용 접근 코드</label>
-          <div>
+          <h1>교사용 관리센터</h1>
+          <p>4자리 접근코드를 입력하세요.</p>
+          <label htmlFor="teacher-code">교사용 접근코드</label>
+          <div className="teacher-login-entry">
+            <label className="teacher-code-boxes" htmlFor="teacher-code" aria-label="4자리 교사용 접근코드 입력">
+              {[0, 1, 2, 3].map((index) => <span key={index}>{accessCode[index] ? "●" : "_"}</span>)}
+            </label>
             <input
               id="teacher-code"
               type="password"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoComplete="off"
+              maxLength={4}
               value={accessCode}
-              onChange={(event) => setAccessCode(event.target.value)}
+              onChange={(event) => setAccessCode(event.target.value.replace(/\D/g, "").slice(0, 4))}
               onKeyDown={(event) => event.key === "Enter" && unlock()}
-              placeholder="CASE ACCESS CODE"
+              aria-describedby={accessError ? "teacher-code-error" : undefined}
             />
-            <button type="button" onClick={unlock}>접속</button>
+            <button type="button" onClick={unlock}>입장</button>
           </div>
-          {accessError && <p className="error-message">{accessError}</p>}
-          <small>초기 접근 코드: 017-LAB · 수업 전 교사만 확인하십시오.</small>
+          {accessError && <p id="teacher-code-error" className="error-message" role="alert">{accessError}</p>}
+          <small>학생 화면과 분리된 교사용 전용 접근 경로입니다.</small>
         </section>
       </main>
     );
@@ -209,21 +273,27 @@ export default function TeacherConsole() {
       <aside className="teacher-rail">
         <div className="teacher-brand">
           <span>DF LAB</span>
-          <b>교사용 통제실</b>
+          <b>교사용 관리센터</b>
           <small>CASE 017</small>
         </div>
         <nav aria-label="교사용 메뉴">
-          <button type="button" className={view === "control" ? "active" : ""} onClick={() => setView("control")}>
-            <span>01</span>진행 관리
-          </button>
-          <button type="button" className={view === "guide" ? "active" : ""} onClick={() => setView("guide")}>
-            <span>02</span>수업지도안
-          </button>
-          <button type="button" className={view === "slides" ? "active" : ""} onClick={() => setView("slides")}>
-            <span>03</span>내장 PPT
+          <button type="button" className={view === "home" ? "active" : ""} onClick={() => setView("home")}>
+            <span>01</span>관리센터
           </button>
           <button type="button" className={view === "setup" ? "active" : ""} onClick={() => setView("setup")}>
-            <span>04</span>수업 준비
+            <span>02</span>수업 준비
+          </button>
+          <button type="button" className={view === "preview" ? "active" : ""} onClick={() => setView("preview")}>
+            <span>03</span>학생 미리보기
+          </button>
+          <button type="button" className={view === "control" ? "active" : ""} onClick={() => setView("control")}>
+            <span>04</span>수업 진행
+          </button>
+          <button type="button" className={["materials", "guide", "slides", "answers"].includes(view) ? "active" : ""} onClick={() => setView("materials")}>
+            <span>05</span>수업자료
+          </button>
+          <button type="button" className={view === "case-management" ? "active" : ""} onClick={() => setView("case-management")}>
+            <span>06</span>사건 관리
           </button>
         </nav>
         <div className="rail-status">
@@ -236,13 +306,8 @@ export default function TeacherConsole() {
       <div className="teacher-main">
         <header className="teacher-header">
           <div>
-            <span>DIGITAL FORENSICS CLASS CONTROL</span>
-            <h1>
-              {view === "control" && "수업 진행 관리"}
-              {view === "guide" && "교사용 수업지도안"}
-              {view === "slides" && "디지털 포렌식 내장 PPT"}
-              {view === "setup" && "CASE 017 수업 준비센터"}
-            </h1>
+            <span>디지털 포렌식 수사관</span>
+            <h1>{viewTitle[view]}</h1>
           </div>
           <div className="teacher-header-actions">
             <label>
@@ -251,9 +316,33 @@ export default function TeacherConsole() {
                 {[40, 50, 60, 90].map((value) => <option key={value} value={value}>{value}분형</option>)}
               </select>
             </label>
-            <button type="button" className="reset-trigger" onClick={() => setResetOpen(true)}>CASE RESET</button>
+            <button type="button" className="reset-trigger" onClick={() => openReset("case")}>CASE RESET</button>
           </div>
         </header>
+
+        {view === "home" && (
+          <TeacherHome
+            onOpenPreparation={() => setView("setup")}
+            onOpenPreview={() => setView("preview")}
+            onOpenControl={() => setView("control")}
+            onOpenMaterials={() => setView("materials")}
+            onOpenCaseManagement={() => setView("case-management")}
+          />
+        )}
+
+        {view === "preview" && <StudentPreviewDirectory />}
+
+        {view === "materials" && (
+          <MaterialsCenter
+            onOpenGuide={() => setView("guide")}
+            onOpenSlides={() => setView("slides")}
+            onOpenAnswers={() => setView("answers")}
+          />
+        )}
+
+        {view === "answers" && <AnswerCenter />}
+
+        {view === "case-management" && <CaseManagement onReset={openReset} />}
 
         {view === "control" && (
           <section className="teacher-view control-view">
@@ -324,6 +413,7 @@ export default function TeacherConsole() {
 
         {view === "guide" && (
           <section className="teacher-view guide-view">
+            <button type="button" className="teacher-back-button" onClick={() => setView("materials")}>수업자료로 돌아가기</button>
             <div className="guide-summary">
               <div><span>대상</span><b>중학교 1~3학년</b></div>
               <div><span>권장 시간</span><b>60~70분</b></div>
@@ -365,6 +455,7 @@ export default function TeacherConsole() {
                       <dl>
                         <section><dt>교사 진행 멘트·행동</dt><dd>{step.teacher}</dd></section>
                         <section><dt>학생 활동</dt><dd>{step.student}</dd></section>
+                        <section><dt>준비물</dt><dd>{step.materials}</dd></section>
                         <section><dt>예상 학생 반응</dt><dd>{step.reaction}</dd></section>
                         <section><dt>막혔을 때 힌트</dt><dd>{step.hint}</dd></section>
                         <section><dt>주의사항</dt><dd>{step.caution}</dd></section>
@@ -401,6 +492,10 @@ export default function TeacherConsole() {
 
         {view === "slides" && (
           <section className="teacher-view slides-view">
+            <div className="slides-action-row">
+              <button type="button" onClick={() => setView("materials")}>수업자료로 돌아가기</button>
+              <button type="button" onClick={() => setSlide(0)}>발표 시작</button>
+            </div>
             <div className="slides-sidebar">
               {SLIDES.map(([title], index) => (
                 <button type="button" key={title} className={slide === index ? "active" : ""} onClick={() => setSlide(index)}>
@@ -414,11 +509,7 @@ export default function TeacherConsole() {
 
         {view === "setup" && (
           <section className="teacher-view setup-view">
-            <CasePreparationCenter
-              onOpenGuide={() => setView("guide")}
-              onOpenSlides={() => setView("slides")}
-              onOpenReset={() => setResetOpen(true)}
-            />
+            <CasePreparationCenter />
           </section>
         )}
       </div>
@@ -427,12 +518,20 @@ export default function TeacherConsole() {
         <div className="reset-modal" role="dialog" aria-modal="true" aria-labelledby="reset-title">
           <section>
             <span>CASE RESET · CONFIRMATION</span>
-            <h2 id="reset-title">웹앱의 CASE 017 진행 기록을 초기화합니다.</h2>
+            <h2 id="reset-title">
+              {resetScope === "case" && "사건을 초기화하시겠습니까?"}
+              {resetScope === "prep" && "수업 준비 상태를 초기화하시겠습니까?"}
+              {resetScope === "records" && "수업 기록을 삭제하시겠습니까?"}
+            </h2>
+            <p className="reset-description">
+              {resetScope === "case" && "학생들의 현재 수사 진행상황이 모두 초기화됩니다."}
+              {resetScope === "prep" && "준비센터의 단계 완료와 체크리스트 기록이 초기화됩니다."}
+              {resetScope === "records" && "모둠별 진행상황과 전송한 힌트 기록이 삭제됩니다."}
+            </p>
             <ul>
-              <li>학생 진행상황</li>
-              <li>증거 보드와 연결선</li>
-              <li>수사 타이머</li>
-              <li>최종 제출 결과와 모둠 상태</li>
+              {resetScope === "case" && <><li>학생 진행상황</li><li>증거 보드와 연결선</li><li>수사 타이머</li><li>최종 제출 결과와 모둠 상태</li></>}
+              {resetScope === "prep" && <><li>8단계 완료 기록</li><li>구매 체크리스트</li><li>복구 사전점검</li><li>출강 10분 점검</li></>}
+              {resetScope === "records" && <><li>1~5모둠 현재 단계</li><li>모둠별 확보 증거 수</li><li>최근 진행 시각</li><li>전송한 힌트</li></>}
             </ul>
             <div className="hardware-warning">
               <b>자동 초기화되지 않는 항목</b>
@@ -442,9 +541,28 @@ export default function TeacherConsole() {
               <input type="checkbox" checked={resetChecked} onChange={(event) => setResetChecked(event.target.checked)} />
               실제 공폰과 microSD를 별도로 재세팅해야 함을 확인했습니다.
             </label>
+            <label className="reset-code-label" htmlFor="reset-code">
+              교사용 코드 입력
+              <input
+                id="reset-code"
+                type="password"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={4}
+                autoComplete="off"
+                value={resetCode}
+                onChange={(event) => {
+                  setResetCode(event.target.value.replace(/\D/g, "").slice(0, 4));
+                  setResetError("");
+                }}
+              />
+            </label>
+            {resetError && <p className="error-message" role="alert">{resetError}</p>}
             <div>
               <button type="button" onClick={() => setResetOpen(false)}>취소</button>
-              <button type="button" className="danger" onClick={resetCase} disabled={!resetChecked}>CASE RESET 실행</button>
+              <button type="button" className="danger" onClick={resetCase} disabled={!resetChecked || resetCode.length !== 4}>
+                {resetScope === "case" ? "초기화" : resetScope === "prep" ? "준비 상태 초기화" : "기록 삭제"}
+              </button>
             </div>
           </section>
         </div>

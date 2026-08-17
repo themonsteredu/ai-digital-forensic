@@ -109,6 +109,12 @@ export const SUSPECTS = [
     role: "축제 장비 담당",
     note: "밝은 운동화 · 반사형 가방끈",
   },
+  {
+    id: "D",
+    name: "서유나",
+    role: "축제 사진 기록",
+    note: "운동장 촬영 파일의 연속 메타데이터 확인",
+  },
 ] as const;
 
 export type TimelineItem = {
@@ -176,6 +182,7 @@ export const TIME_PRESETS = {
 export const LESSON_STEPS = [
   {
     title: "1. 사건 브리핑",
+    materials: "교사용 대형 화면 · 학생 수사 메모지",
     teacher: "조명을 낮추고 ‘지금부터 여러분은 디지털 포렌식 수사관입니다’라고 안내한 뒤 사건을 재생합니다.",
     student: "CCTV를 관찰하고 처음 눈에 들어온 인물·시각·행동을 메모합니다.",
     reaction: "검은 옷 인물을 곧바로 범인이라고 단정하려는 반응이 자주 나옵니다.",
@@ -184,6 +191,7 @@ export const LESSON_STEPS = [
   },
   {
     title: "2. 증거폰 확보·조사",
+    materials: "봉인된 공폰 E-01 · 증거봉투 · PIN 자료",
     teacher: "증거봉투 번호와 봉인 상태를 함께 확인한 뒤 모둠 대표가 개봉하게 합니다.",
     student: "PIN 단서를 해석하고 실제 공폰의 기본 갤러리, 파일 앱, microSD 존재 여부를 자유롭게 조사합니다.",
     reaction: "교사에게 어느 앱을 열어야 하는지 바로 묻는 경우가 많습니다.",
@@ -192,6 +200,7 @@ export const LESSON_STEPS = [
   },
   {
     title: "3. 디지털 증거 등록",
+    materials: "학생용 노트북 또는 크롬북 · 웹 포렌식 시스템",
     teacher: "공폰에 보이는 자료와 웹 시스템의 모바일 추출 결과가 서로 다른 증거 표현임을 설명합니다.",
     student: "웹 추출 데이터에서 삭제 흔적, 메시지와 통화기록의 시간 및 저장 위치를 판독합니다.",
     reaction: "삭제 흔적을 발견하면 곧바로 사진 내용까지 안다고 생각할 수 있습니다.",
@@ -200,6 +209,7 @@ export const LESSON_STEPS = [
   },
   {
     title: "4. microSD 삭제 데이터 복구",
+    materials: "microSD · USB 카드리더기 · 복구 도구 · 노트북 저장 폴더",
     teacher: "microSD를 분리하고 리더기에 연결하도록 안내한 뒤 지정된 무료 복구 도구의 검색 범위만 확인합니다.",
     student: "읽기 중심으로 검색해 IMG_2048.jpg를 노트북 폴더로 복구하고 DF-2048을 웹 시스템에 등록합니다.",
     reaction: "복구율 숫자가 높으면 내용도 완전하다고 오해할 수 있습니다.",
@@ -208,6 +218,7 @@ export const LESSON_STEPS = [
   },
   {
     title: "5. 메타데이터·CCTV 분석",
+    materials: "복구된 IMG_2048.jpg · 웹 CCTV 분석 화면",
     teacher: "사진의 촬영 시각과 CCTV 시각을 나란히 제시하고 무엇이 일치·불일치하는지 묻습니다.",
     student: "메타데이터와 CCTV 프레임을 확대·비교하여 인상착의의 공통 특징을 등록합니다.",
     reaction: "검은 후드만 보고 B라고 확신했다가 위치 기록에서 혼란을 겪습니다.",
@@ -216,6 +227,7 @@ export const LESSON_STEPS = [
   },
   {
     title: "6. 타임라인·증거 보드",
+    materials: "타임라인 활동지 · 증거카드 또는 웹 증거보드",
     teacher: "각 기록의 ‘발생 시각’과 ‘확인 시각’이 다를 수 있음을 짚어 줍니다.",
     student: "증거를 시간순으로 배열하고 서로 지지하거나 충돌하는 기록을 연결합니다.",
     reaction: "사진 삭제를 촬영보다 앞에 놓거나 CCTV 점프 구간을 놓칠 수 있습니다.",
@@ -224,6 +236,7 @@ export const LESSON_STEPS = [
   },
   {
     title: "7. 최종 수사 결론",
+    materials: "최종 수사보고서 · 확보 증거 3개 이상",
     teacher: "인물 이름보다 결정적 증거 3개의 연결 논리를 먼저 발표하게 합니다.",
     student: "의심 인물, 증거, 사건 순서, 판단 근거를 수사보고서로 제출합니다.",
     reaction: "한 가지 강한 단서만 선택하거나 느낌을 근거로 쓰는 경우가 있습니다.",
@@ -232,6 +245,7 @@ export const LESSON_STEPS = [
   },
   {
     title: "8. 직업 연결·윤리",
+    materials: "내장 디지털 포렌식 PPT · 마무리 질문",
     teacher: "학생이 방금 한 행동을 보존·획득·분석·교차검증·감정 결과 작성의 실제 업무와 연결합니다.",
     student: "복구 가능성의 한계, 무결성, 개인정보 보호 원칙을 한 문장씩 정리합니다.",
     reaction: "포렌식을 삭제 파일 복구 하나로만 이해했던 생각이 바뀝니다.",

@@ -10,6 +10,7 @@ import {
   type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import Link from "next/link";
 import {
   CORRECT_TIMELINE,
   EVIDENCE,
@@ -20,6 +21,7 @@ import {
   type StageId,
   type TimelineItem,
 } from "./data";
+import { PREVIEW_STEPS } from "./teacher/teacherData";
 
 const STAGE_STATUS: Partial<Record<StageId, string>> = {
   "phone-search": GROUP_STAGES[0],
@@ -417,19 +419,29 @@ function PrimaryButton({
   );
 }
 
-function AccessScreen({ onComplete }: { onComplete: () => void }) {
-  const [progress, setProgress] = useState(0);
+function AccessScreen({
+  onComplete,
+  teacherPreview = false,
+  previewVariant = "",
+}: {
+  onComplete: () => void;
+  teacherPreview?: boolean;
+  previewVariant?: string;
+}) {
+  const [progress, setProgress] = useState(previewVariant === "alert" ? 100 : teacherPreview ? 28 : 0);
   const complete = progress >= 100;
 
   useEffect(() => {
+    if (teacherPreview) return;
     const timer = window.setInterval(() => {
       setProgress((value) => Math.min(100, value + (value < 64 ? 2 : 1)));
     }, 48);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [teacherPreview]);
 
   return (
     <main className="access-screen">
+      {!teacherPreview && <Link className="teacher-entry-link" href="/teacher">교사용</Link>}
       <div className="access-grid" />
       <div className="access-corners" aria-hidden="true" />
       <section className={classNames("access-console", complete && "complete")}>
@@ -480,6 +492,41 @@ function AccessScreen({ onComplete }: { onComplete: () => void }) {
   );
 }
 
+function TeacherPreviewBar({
+  step,
+  onStep,
+  onShortcut,
+}: {
+  step: number;
+  onStep: (step: number) => void;
+  onShortcut: () => void;
+}) {
+  const current = PREVIEW_STEPS[step];
+  const shortcut = current.variant === "pin"
+    ? "정답으로 진행"
+    : ["trace", "deleted-data", "messages", "calls", "frame"].includes(current.variant)
+      ? "자동 등록"
+      : ["board", "report"].includes(current.variant)
+        ? "미리보기용 증거 자동 확보"
+        : current.variant === "reconstruction"
+          ? "예시 결과 보기"
+          : "다음 단계 준비";
+
+  return (
+    <header className="teacher-preview-bar">
+      <div><span>교사용 미리보기 · CASE 017</span><b>{String(step + 1).padStart(2, "0")} / {PREVIEW_STEPS.length} · {current.label}</b></div>
+      <nav aria-label="교사용 미리보기 이동">
+        <button type="button" onClick={() => onStep(Math.max(0, step - 1))} disabled={step === 0}>이전 단계</button>
+        <button type="button" onClick={() => onStep(Math.min(PREVIEW_STEPS.length - 1, step + 1))} disabled={step === PREVIEW_STEPS.length - 1}>다음 단계</button>
+        <label><span>단계 목록</span><select value={step} onChange={(event) => onStep(Number(event.target.value))}>{PREVIEW_STEPS.map((item, index) => <option value={index} key={`${item.label}-${index}`}>{index + 1}. {item.label}</option>)}</select></label>
+        <button type="button" onClick={() => onStep(0)}>처음부터 보기</button>
+        <Link href="/teacher">교사용으로 돌아가기</Link>
+      </nav>
+      <button type="button" className="preview-shortcut" onClick={onShortcut}>{shortcut}</button>
+    </header>
+  );
+}
+
 type Position = { x: number; y: number };
 
 const DESKTOP_BOARD_POSITIONS: Record<string, Position> = {
@@ -504,8 +551,10 @@ const COMPACT_BOARD_POSITIONS: Record<string, Position> = {
   "suspect-C": { x: 53, y: 60 },
 };
 
-export default function ForensicsExperience() {
+export default function ForensicsExperience({ teacherPreview = false }: { teacherPreview?: boolean }) {
   const [mounted, setMounted] = useState(false);
+  const [previewAuthorized, setPreviewAuthorized] = useState(!teacherPreview);
+  const [previewStep, setPreviewStep] = useState(0);
   const [stage, setStage] = useState<StageId>("access");
   const [evidenceIds, setEvidenceIds] = useState<EvidenceId[]>([]);
   const [groupId, setGroupId] = useState("E-01");
@@ -572,6 +621,11 @@ export default function ForensicsExperience() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       setMounted(true);
+      if (teacherPreview) {
+        const authorized = window.sessionStorage.getItem("df-teacher-auth") === "true";
+        setPreviewAuthorized(authorized);
+        return;
+      }
       const savedStage = window.localStorage.getItem("df-stage") as StageId | null;
       const savedEvidence = window.localStorage.getItem("df-evidence");
       const savedGroup = window.localStorage.getItem("df-group-id");
@@ -592,10 +646,10 @@ export default function ForensicsExperience() {
       }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [teacherPreview]);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || teacherPreview) return;
     window.localStorage.setItem("df-stage", stage);
     window.localStorage.setItem("df-evidence", JSON.stringify(evidenceIds));
     window.localStorage.setItem("df-group-id", groupId);
@@ -610,10 +664,10 @@ export default function ForensicsExperience() {
         updatedAt: new Date().toISOString(),
       }),
     );
-  }, [currentIndex, evidenceIds, groupId, mounted, stage]);
+  }, [currentIndex, evidenceIds, groupId, mounted, stage, teacherPreview]);
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || teacherPreview) return;
     const groupNumber = Number(groupId.slice(-1));
     const readHint = () => {
       const raw = window.localStorage.getItem(`df-hint-${groupNumber}`);
@@ -632,7 +686,7 @@ export default function ForensicsExperience() {
       window.clearInterval(timer);
       window.removeEventListener("storage", readHint);
     };
-  }, [groupId, mounted]);
+  }, [groupId, mounted, teacherPreview]);
 
   useEffect(() => {
     const query = window.matchMedia("(max-width: 620px)");
@@ -669,7 +723,109 @@ export default function ForensicsExperience() {
     setEvidenceIds((current) => Array.from(new Set([...current, ...ids])));
   }
 
+  function applyPreviewStep(index: number) {
+    const preview = PREVIEW_STEPS[index];
+    const allEvidence = Object.keys(EVIDENCE) as EvidenceId[];
+    setStage(preview.stage);
+    setGroupId("E-01");
+    setPin(preview.stage === "pin" ? "1017" : "");
+    setPinError("");
+    setSearchStarted(preview.stage === "phone-search");
+    setSearchTime(720);
+    setPhoneFindings(preview.stage === "phone-search" ? { gallery: true, files: true, storage: true } : { gallery: false, files: false, storage: false });
+    setTraceCode(["trace", "deleted-data"].includes(preview.variant) ? "DF-2048" : "");
+    setTraceError("");
+    setLogsRegistered(["messages", "calls"].includes(preview.variant));
+    setRecoveryName(preview.stage === "recovery" ? "IMG_2048.JPG" : "");
+    setRecoveryError("");
+    setRecoveryProgress(preview.stage === "recovery" ? 94 : 0);
+    setRecoveryCodeVerified(["deleted-data", "micro-sd"].includes(preview.variant));
+    setCrossChecked(["metadata", "frame", "timeline", "board", "report", "reconstruction", "career"].includes(preview.variant));
+    setCctvRegistered(["frame", "timeline", "board", "report", "reconstruction", "career"].includes(preview.variant));
+    setTimelineItems(["timeline", "board", "report", "reconstruction", "career"].includes(preview.variant) ? CORRECT_TIMELINE : [CORRECT_TIMELINE[2], CORRECT_TIMELINE[0], CORRECT_TIMELINE[4], CORRECT_TIMELINE[1], CORRECT_TIMELINE[5], CORRECT_TIMELINE[3]]);
+    setTimelineVerified(["timeline", "board", "report", "reconstruction", "career"].includes(preview.variant));
+    setTimelineFeedback(preview.variant === "timeline" ? "미리보기용 정답 순서가 자동 적용되었습니다." : "");
+    setConnections(["board", "report", "reconstruction", "career"].includes(preview.variant) ? [["recovered-photo", "metadata"], ["metadata", "cctv"], ["message", "suspect-C"]] : []);
+    setBoardReady(["board", "report", "reconstruction", "career"].includes(preview.variant));
+    setEvidenceIds(
+      ["trace", "deleted-data"].includes(preview.variant)
+        ? ["deleted-trace", "recovered-photo"]
+        : ["messages"].includes(preview.variant)
+          ? ["deleted-trace", "recovered-photo", "message"]
+          : ["calls"].includes(preview.variant)
+            ? ["deleted-trace", "recovered-photo", "message", "call"]
+            : ["micro-sd", "metadata", "frame", "timeline", "board", "report", "reconstruction", "career"].includes(preview.variant)
+              ? allEvidence
+              : [],
+    );
+    const completeReport = ["report", "reconstruction", "career"].includes(preview.variant);
+    setSuspect(completeReport ? "C" : "");
+    setReportEvidence(completeReport ? ["recovered-photo", "metadata", "cctv", "message", "call"] : []);
+    setRationale(completeReport ? "복구 사진의 작은 특징과 메타데이터 촬영 시각이 CCTV 프레임, 메시지, 통화기록의 시간 흐름과 일치합니다." : "");
+    setReportError("");
+    setReconstructionBeat(preview.variant === "reconstruction" ? 6 : 0);
+    window.history.replaceState(null, "", `/teacher/preview?step=${index}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  useEffect(() => {
+    if (!mounted || !teacherPreview || !previewAuthorized) return;
+    const timer = window.setTimeout(() => {
+      const requested = Number(new URLSearchParams(window.location.search).get("step") ?? "0");
+      const nextStep = Number.isFinite(requested)
+        ? Math.max(0, Math.min(PREVIEW_STEPS.length - 1, requested))
+        : 0;
+      setPreviewStep(nextStep);
+      applyPreviewStep(nextStep);
+    }, 0);
+    return () => window.clearTimeout(timer);
+    // The preview seed is intentionally applied once after authorization.
+  }, [mounted, previewAuthorized, teacherPreview]);
+
+  function openPreviewStep(index: number) {
+    const next = Math.max(0, Math.min(PREVIEW_STEPS.length - 1, index));
+    setPreviewStep(next);
+    applyPreviewStep(next);
+  }
+
+  function applyPreviewShortcut() {
+    const preview = PREVIEW_STEPS[previewStep];
+    if (preview.variant === "pin") setPin("1017");
+    if (["trace", "deleted-data"].includes(preview.variant)) {
+      setTraceCode("DF-2048");
+      setRecoveryCodeVerified(true);
+      addEvidence("deleted-trace", "recovered-photo");
+    }
+    if (["messages", "calls"].includes(preview.variant)) {
+      setLogsRegistered(true);
+      addEvidence("message", "call");
+    }
+    if (preview.variant === "frame") {
+      setCctvRegistered(true);
+      addEvidence("cctv");
+    }
+    if (["board", "report"].includes(preview.variant)) {
+      setEvidenceIds(Object.keys(EVIDENCE) as EvidenceId[]);
+      setConnections([["recovered-photo", "metadata"], ["metadata", "cctv"], ["message", "suspect-C"]]);
+      setBoardReady(true);
+      if (preview.variant === "report") {
+        setSuspect("C");
+        setReportEvidence(["recovered-photo", "metadata", "cctv", "message", "call"]);
+        setRationale("복구 사진의 작은 특징과 메타데이터 촬영 시각이 CCTV 프레임, 메시지, 통화기록의 시간 흐름과 일치합니다.");
+      }
+    }
+    if (preview.variant === "reconstruction") setReconstructionBeat(6);
+    if (!["trace", "deleted-data", "messages", "calls", "frame", "board", "report", "reconstruction"].includes(preview.variant)) {
+      openPreviewStep(Math.min(PREVIEW_STEPS.length - 1, previewStep + 1));
+    }
+  }
+
   function go(next: StageId) {
+    if (teacherPreview) {
+      const nextPreview = PREVIEW_STEPS.findIndex((item, index) => index > previewStep && item.stage === next);
+      openPreviewStep(nextPreview >= 0 ? nextPreview : Math.min(PREVIEW_STEPS.length - 1, previewStep + 1));
+      return;
+    }
     setStage(next);
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -820,10 +976,19 @@ export default function ForensicsExperience() {
   }
 
   if (!mounted) return <main className="boot-blank" />;
-  if (stage === "access") return <AccessScreen onComplete={() => go("briefing")} />;
+  if (teacherPreview && !previewAuthorized) {
+    return <main className="preview-auth-required"><section><span>TEACHER ACCESS REQUIRED</span><h1>교사용 관리센터 로그인이 필요합니다.</h1><p>학생 단계별 미리보기는 교사용 인증 후에만 열립니다.</p><Link href="/teacher">교사용 로그인으로 이동</Link></section></main>;
+  }
+  if (stage === "access") return (
+    <>
+      {teacherPreview && <TeacherPreviewBar step={previewStep} onStep={openPreviewStep} onShortcut={applyPreviewShortcut} />}
+      <AccessScreen key={teacherPreview ? PREVIEW_STEPS[previewStep]?.variant : "student-access"} onComplete={() => go("briefing")} teacherPreview={teacherPreview} previewVariant={PREVIEW_STEPS[previewStep]?.variant} />
+    </>
+  );
 
   return (
-    <main className="forensics-app">
+    <main className={classNames("forensics-app", teacherPreview && "teacher-preview-active")}>
+      {teacherPreview && <TeacherPreviewBar step={previewStep} onStep={openPreviewStep} onShortcut={applyPreviewShortcut} />}
       <div className="ambient-grid" />
       <SystemHud stage={stage} evidenceCount={evidenceIds.length} groupId={groupId} />
       {teacherHint && (

@@ -2,7 +2,6 @@
 
 import Image from "next/image";
 import { useEffect, useState, type ReactNode } from "react";
-import { SLIDES } from "../data";
 
 type PrepStepId =
   | "purchase"
@@ -12,52 +11,63 @@ type PrepStepId =
   | "sd"
   | "recovery-test"
   | "printables"
-  | "preflight"
-  | "guide"
-  | "slides"
-  | "reset";
-
-type Props = {
-  onOpenGuide: () => void;
-  onOpenSlides: () => void;
-  onOpenReset: () => void;
-};
+  | "preflight";
 
 const PREP_STEPS: Array<{ id: PrepStepId; label: string; short: string }> = [
-  { id: "purchase", label: "공폰 구매 가이드", short: "구매" },
+  { id: "purchase", label: "공폰 준비", short: "구매·수량" },
   { id: "setup", label: "공폰 초기 세팅", short: "초기 세팅" },
-  { id: "images", label: "사건 사진 다운로드", short: "사진팩" },
-  { id: "files", label: "사건 파일 다운로드", short: "파일팩" },
-  { id: "sd", label: "microSD 세팅", short: "microSD" },
+  { id: "images", label: "사건 사진 준비", short: "사진팩" },
+  { id: "files", label: "사건 파일 준비", short: "파일팩" },
+  { id: "sd", label: "microSD 준비", short: "microSD" },
   { id: "recovery-test", label: "삭제 파일 복구 테스트", short: "복구 테스트" },
-  { id: "printables", label: "출력물", short: "출력물" },
-  { id: "preflight", label: "수업 전 점검", short: "10분 점검" },
-  { id: "guide", label: "수업지도안", short: "지도안" },
-  { id: "slides", label: "PPT", short: "PPT" },
-  { id: "reset", label: "CASE RESET", short: "RESET" },
+  { id: "printables", label: "출력물 준비", short: "출력물" },
+  { id: "preflight", label: "수업 전 최종점검", short: "10분 점검" },
 ];
 
 const PREP_CHECKS_STORAGE_KEY = "df-case017-prep-checks-v1";
 const PREP_STEPS_STORAGE_KEY = "df-case017-prep-steps-v1";
 
 const SETUP_ITEMS = [
-  ["setup-factory", "STEP 1", "중고폰 공장 초기화", "기존 사진, 연락처, 앱 데이터를 모두 제거합니다."],
+  ["setup-factory", "STEP 1", "공장초기화된 Android 공폰 준비", "기존 사진, 연락처, 앱 데이터가 없는 수업 전용 기기를 사용합니다."],
   ["setup-account", "STEP 2", "개인 계정 제거 확인", "Google·Samsung 계정이 남아 있지 않은지 확인합니다."],
-  ["setup-wifi", "STEP 3", "Wi-Fi 연결", "파일을 내려받을 때만 연결하고 수업 직전에는 알림을 차단합니다."],
+  ["setup-wifi", "STEP 3", "Wi-Fi 연결 확인", "파일을 내려받을 때만 연결하고 수업 직전에는 알림을 차단합니다."],
   ["setup-pin", "STEP 4", "잠금 PIN 설정", "PIN은 1017로 설정합니다."],
-  ["setup-sd", "STEP 5", "microSD 삽입", "공폰 1대당 16GB 또는 32GB microSD 1개를 삽입합니다."],
-  ["setup-portable", "STEP 6", "휴대용 저장소 선택", "내부 저장소로 통합하지 않습니다."],
-  ["setup-copy", "STEP 7", "사건용 사진·파일 복사", "사진팩과 파일팩을 정해진 폴더에 복사합니다."],
-  ["setup-final", "STEP 8", "수업 전 점검", "갤러리, 내 파일, microSD 인식과 PIN을 확인합니다."],
+  ["setup-copy-images", "STEP 5", "사건 사진을 공폰에 복사", "사진팩을 DCIM/Camera 폴더에 복사하고 갤러리에서 확인합니다."],
+  ["setup-copy-files", "STEP 6", "사건 파일을 공폰에 복사", "Documents와 Download 폴더 구조를 유지합니다."],
+  ["setup-sd", "STEP 7", "microSD 삽입", "공폰 1대당 16GB 또는 32GB microSD 1개를 삽입합니다."],
+  ["setup-portable", "STEP 8", "휴대용 저장소 확인", "내부 저장소로 통합하지 않고 ‘휴대용 저장소’로 사용합니다."],
+] as const;
+
+const PURCHASE_CHECKS = [
+  ["purchase-wifi", "Wi-Fi 정상"],
+  ["purchase-touch", "터치 정상"],
+  ["purchase-screen", "화면 파손 없음"],
+  ["purchase-charge", "충전 정상"],
+  ["purchase-battery", "배터리 급방전 없음"],
+  ["purchase-sd", "microSD 정상 인식"],
+  ["purchase-reset", "공장초기화 가능"],
+  ["purchase-account", "이전 사용자 계정 잠금 없음"],
+  ["purchase-no-sim", "유심 없이 Wi-Fi 사용 가능"],
 ] as const;
 
 const RECOVERY_TEST_ITEMS = [
   ["recovery-sd", "microSD 인식"],
   ["recovery-reader", "카드리더기 인식"],
+  ["recovery-laptop", "노트북 정상 인식"],
   ["recovery-tool", "복구 프로그램 실행"],
   ["recovery-search", "IMG_2048 검색"],
   ["recovery-success", "IMG_2048 복구 성공"],
   ["recovery-open", "복구 파일 정상 열림"],
+] as const;
+
+const PHONE_IMAGES = [
+  [2039, "학교 축제 준비 모습", "갤러리", "일반 자료"],
+  [2040, "운동장 체험 부스", "갤러리", "일반 자료"],
+  [2041, "행사실 복도", "갤러리", "보조 단서"],
+  [2042, "축제 안내 표지", "갤러리", "일반 자료"],
+  [2043, "공연 준비 장면", "갤러리", "알리바이 참고"],
+  [2044, "학교 축제 장비", "갤러리", "일반 자료"],
+  [2045, "축제 현장 인물 일부", "갤러리", "중요 단서"],
 ] as const;
 
 const PREFLIGHT_ITEMS = [
@@ -126,10 +136,11 @@ function DownloadButton({ href, children, secondary = false }: { href: string; c
   );
 }
 
-export default function CasePreparationCenter({ onOpenGuide, onOpenSlides, onOpenReset }: Props) {
+export default function CasePreparationCenter() {
   const [active, setActive] = useState<PrepStepId>("purchase");
   const [checks, setChecks] = useState<Record<string, boolean>>({});
   const [completedSteps, setCompletedSteps] = useState<PrepStepId[]>([]);
+  const [studentCount, setStudentCount] = useState(25);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
@@ -159,6 +170,8 @@ export default function CasePreparationCenter({ onOpenGuide, onOpenSlides, onOpe
   const setupCount = SETUP_ITEMS.filter(([id]) => checks[id]).length;
   const recoveryCount = RECOVERY_TEST_ITEMS.filter(([id]) => checks[id]).length;
   const activeStep = PREP_STEPS[activeIndex];
+  const recommendedGroups = Math.max(1, Math.ceil(studentCount / 5));
+  const sparePhones = Math.max(1, Math.ceil(recommendedGroups / 5));
 
   function toggleCheck(id: string) {
     setChecks((current) => ({ ...current, [id]: !current[id] }));
@@ -230,15 +243,22 @@ export default function CasePreparationCenter({ onOpenGuide, onOpenSlides, onOpe
                 <p>Android 9 이상 권장 · microSD 슬롯 · Wi-Fi·터치·충전 정상 · 배터리 1시간 이상 · 저장공간 16GB 이상 · 유심과 Google 계정 불필요 · 동일 기종 여러 대 권장</p>
               </div>
               <div className="device-guide-table" role="table" aria-label="공폰 추천 기종">
-                <div className="table-head" role="row"><span>순위</span><span>추천 기종</span><span>microSD</span><span>참고용 가격대</span></div>
+                <div className="table-head" role="row"><span>순위</span><span>추천 기종</span><span>microSD</span><span>구매 안내</span></div>
                 {[
-                  ["1순위", "Samsung Galaxy A30", "최대 512GB", "약 3~8만원"],
-                  ["2순위", "Samsung Galaxy A21s", "최대 512GB", "약 4~14만원"],
-                  ["3순위", "Samsung Galaxy A12", "최대 1TB", "약 5~14만원"],
-                  ["대체", "Galaxy A20 / A10", "구매 전 확인", "약 2~7만원"],
+                  ["1순위", "Samsung Galaxy A30", "지원", "중고 시세 확인"],
+                  ["2순위", "Samsung Galaxy A21s", "지원", "중고 시세 확인"],
+                  ["3순위", "Samsung Galaxy A12", "지원", "중고 시세 확인"],
+                  ["대체", "Galaxy A20 / A10", "구매 전 확인", "중고 시세 확인"],
                 ].map((row) => <div role="row" key={row[1]}>{row.map((cell) => <span role="cell" key={cell}>{cell}</span>)}</div>)}
               </div>
-              <p className="prep-footnote">2026년 8월 공개 중고 매물 참고 범위입니다. 상태·배터리·구성품에 따라 크게 달라지므로 가격보다 microSD 트레이 포함 여부와 실제 인식 테스트를 우선하십시오.</p>
+              <p className="prep-footnote">가격은 상태·배터리·구성품에 따라 변동됩니다. 중고 시세를 확인하여 구매하고, microSD 트레이 포함 여부와 실제 인식 테스트를 우선하십시오.</p>
+              <section className="phone-quantity-calculator">
+                <div><span>학생 수</span><label><input type="number" min="4" max="80" value={studentCount} onChange={(event) => setStudentCount(Math.max(4, Math.min(80, Number(event.target.value) || 4)))} /> 명</label></div>
+                <dl><div><dt>권장 모둠</dt><dd>{recommendedGroups}개</dd></div><div><dt>권장 공폰</dt><dd>{recommendedGroups}대</dd></div><div><dt>예비 공폰</dt><dd>{sparePhones}대</dd></div><div><dt>총 권장</dt><dd>{recommendedGroups + sparePhones}대</dd></div></dl>
+                <p>학생 4~5명당 공폰 1대를 기준으로 계산합니다.</p>
+              </section>
+              <div className="prep-subsection-head"><span>PURCHASE CHECK</span><h3>공폰 구매 체크리스트</h3></div>
+              <Checklist items={PURCHASE_CHECKS} checks={checks} onToggle={toggleCheck} className="two-column" />
               <div className="purchase-test-grid">
                 {[
                   ["microSD", "카드 삽입 후 내 파일에서 외장 저장공간이 보이는지 확인"],
@@ -256,7 +276,10 @@ export default function CasePreparationCenter({ onOpenGuide, onOpenSlides, onOpe
               <div className="setup-step-list">
                 {SETUP_ITEMS.map(([id, step, title, detail]) => (
                   <article key={id} className={checks[id] ? "complete" : ""}>
-                    <div><span>{step}</span><h3>{title}</h3><p>{detail}</p></div>
+                    <div><span>{step}</span><h3>{title}</h3><p>{detail}</p>
+                      {id === "setup-copy-images" && <div className="setup-step-actions"><button type="button" onClick={() => setActive("images")}>사건 사진 보기</button><a href="/downloads/case017/CASE017_PHONE_IMAGES.zip" download>다운로드</a></div>}
+                      {id === "setup-copy-files" && <div className="setup-step-actions"><button type="button" onClick={() => setActive("files")}>사건 파일 보기</button><a href="/downloads/case017/CASE017_PHONE_FILES.zip" download>다운로드</a></div>}
+                    </div>
                     <label><input type="checkbox" checked={Boolean(checks[id])} onChange={() => toggleCheck(id)} /><b>{checks[id] ? "완료" : "완료 체크"}</b></label>
                   </article>
                 ))}
@@ -269,11 +292,11 @@ export default function CasePreparationCenter({ onOpenGuide, onOpenSlides, onOpe
             <div className="prep-section-content">
               <DownloadButton href="/downloads/case017/CASE017_PHONE_IMAGES.zip">CASE017_PHONE_IMAGES.zip</DownloadButton>
               <div className="asset-summary"><b>포함 파일 7장</b><p>IMG_2039.jpg부터 IMG_2045.jpg까지 공폰 기본 갤러리의 DCIM/Camera 폴더에 복사합니다. 대부분은 평범한 축제 사진이며 단서는 일부 사진에만 있습니다.</p></div>
-              <div className="phone-image-grid">
-                {Array.from({ length: 7 }, (_, index) => 2039 + index).map((number) => (
+              <div className="phone-image-grid detailed">
+                {PHONE_IMAGES.map(([number, description, location, importance]) => (
                   <figure key={number}>
-                    <Image src={`/case017/phone-images/IMG_${number}.jpg`} alt={`CASE 017 공폰 사진 IMG_${number}`} width={1448} height={1086} sizes="(max-width: 620px) 44vw, 180px" />
-                    <figcaption>IMG_{number}.jpg</figcaption>
+                    <Image src={`/case017/phone-images/IMG_${number}.jpg`} alt={`CASE 017 공폰 사진 IMG_${number}`} width={1448} height={1086} sizes="(max-width: 620px) 92vw, 270px" />
+                    <figcaption><b>IMG_{number}.jpg</b><p>{description}</p><dl><div><dt>학생에게 보이는 위치</dt><dd>{location}</dd></div><div><dt>사건 중요도</dt><dd>{importance}</dd></div></dl><a href={`/case017/phone-images/IMG_${number}.jpg`} download>개별 다운로드</a></figcaption>
                   </figure>
                 ))}
               </div>
@@ -301,6 +324,10 @@ export default function CasePreparationCenter({ onOpenGuide, onOpenSlides, onOpe
           {active === "sd" && (
             <div className="prep-section-content">
               <DownloadButton href="/downloads/case017/CASE017_SD_PACK.zip">CASE017_SD_PACK.zip</DownloadButton>
+              <div className="sd-explainer">
+                <Image src="/case017/equipment/micro-sd-reader.jpg" alt="microSD와 USB 카드리더기 수업 준비 예시" width={1400} height={900} sizes="(max-width: 620px) 92vw, 480px" />
+                <div><span>microSD란?</span><h3>스마트폰에 넣어 사용하는 작은 저장장치입니다.</h3><p>CASE 017에서는 학생이 실제 삭제 파일 복구를 경험하기 위한 증거 저장매체로 사용합니다. USB 카드리더기로 노트북에 연결합니다.</p></div>
+              </div>
               <div className="sd-spec"><div><span>권장 용량</span><b>16GB 또는 32GB</b></div><div><span>수량</span><b>공폰 1대당 1개</b></div><div><span>설정</span><b>휴대용 저장소</b></div></div>
               <div className="sd-file-grid">
                 {[2039, 2040, 2041, 2042, 2048].map((number) => <span key={number} className={number === 2048 ? "critical" : ""}>IMG_{number}.jpg{number === 2048 && <b>삭제 대상</b>}</span>)}
@@ -350,35 +377,6 @@ export default function CasePreparationCenter({ onOpenGuide, onOpenSlides, onOpe
               </div>
               <Checklist items={PREFLIGHT_ITEMS} checks={checks} onToggle={toggleCheck} className="preflight-grid" />
               <button type="button" className="clear-checks" onClick={() => setChecks((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith("ready-"))))}>10분 점검만 초기화</button>
-            </div>
-          )}
-
-          {active === "guide" && (
-            <div className="prep-section-content">
-              <div className="resource-hero"><span>60분형 권장</span><h3>실제 증거물 조사에서 교차검증까지</h3><p>기존 8단계 수업지도안, 교사 멘트, 예상 반응, 힌트, 주의사항을 유지했습니다.</p></div>
-              <div className="lesson-flow-mini">
-                {["브리핑", "공폰 조사", "증거 등록", "microSD 복구", "메타데이터·CCTV", "타임라인·증거보드", "최종 보고서", "직업·윤리"].map((item, index) => <span key={item}><b>{index + 1}</b>{item}</span>)}
-              </div>
-              <div className="print-actions">
-                <button type="button" className="prep-primary-action" onClick={onOpenGuide}>웹 수업지도안 열기</button>
-                <DownloadButton secondary href="/downloads/case017/printables/10_teacher_lesson_guide.pdf">수업지도안 PDF</DownloadButton>
-              </div>
-            </div>
-          )}
-
-          {active === "slides" && (
-            <div className="prep-section-content">
-              <div className="resource-hero"><span>15 SLIDES</span><h3>디지털 포렌식 내장 PPT</h3><p>삭제 복구, 스마트폰 포렌식, 메타데이터, CCTV, 무결성, 실제 수사 흐름, 직업과 윤리를 다룹니다.</p></div>
-              <div className="slide-count-grid">{SLIDES.map(([title], index) => <span key={title}><b>{String(index + 1).padStart(2, "0")}</b>{title}</span>)}</div>
-              <button type="button" className="prep-primary-action" onClick={onOpenSlides}>내장 PPT 열기</button>
-            </div>
-          )}
-
-          {active === "reset" && (
-            <div className="prep-section-content">
-              <div className="reset-boundary"><span>WEB RESET</span><h3>웹 진행 기록만 초기화합니다.</h3><p>학생 진행상황, 증거 보드, 타이머, 최종 제출과 모둠 상태를 지웁니다.</p></div>
-              <div className="reset-boundary physical"><span>PHYSICAL RESET</span><h3>공폰과 microSD는 교사가 직접 재세팅합니다.</h3><p>사진·파일 다시 복사, IMG_2048 삭제, microSD 쓰기 중지, 복구 테스트가 필요합니다.</p></div>
-              <button type="button" className="prep-primary-action danger" onClick={onOpenReset}>CASE RESET 확인창 열기</button>
             </div>
           )}
 
