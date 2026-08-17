@@ -8,6 +8,7 @@ import {
   SLIDES,
   TIME_PRESETS,
 } from "../data";
+import CasePreparationCenter from "./CasePreparationCenter";
 
 type TeacherView = "control" | "guide" | "slides" | "setup";
 type GroupRecord = {
@@ -222,7 +223,7 @@ export default function TeacherConsole() {
             <span>03</span>내장 PPT
           </button>
           <button type="button" className={view === "setup" ? "active" : ""} onClick={() => setView("setup")}>
-            <span>04</span>사전 세팅
+            <span>04</span>수업 준비
           </button>
         </nav>
         <div className="rail-status">
@@ -240,7 +241,7 @@ export default function TeacherConsole() {
               {view === "control" && "수업 진행 관리"}
               {view === "guide" && "교사용 수업지도안"}
               {view === "slides" && "디지털 포렌식 내장 PPT"}
-              {view === "setup" && "공폰·microSD 사전 세팅"}
+              {view === "setup" && "CASE 017 수업 준비센터"}
             </h1>
           </div>
           <div className="teacher-header-actions">
@@ -413,53 +414,11 @@ export default function TeacherConsole() {
 
         {view === "setup" && (
           <section className="teacher-view setup-view">
-            <div className="setup-alert">
-              <span>수업 전 필수 원칙</span>
-              <h2>실제 학생 개인정보는 사용하지 않습니다.</h2>
-              <p>공폰과 microSD에는 CASE 017용 가상 인물·가상 메시지·가상 사진만 저장하십시오.</p>
-            </div>
-            <div className="setup-columns">
-              <article>
-                <span>SETUP 01</span>
-                <h2>공폰 준비 방법</h2>
-                <ol>
-                  <li><b>초기화</b><p>기존 계정·사진·연락처를 모두 제거하고 수업 전용 상태로 준비합니다.</p></li>
-                  <li><b>공통 PIN</b><p>1017을 설정합니다. 이것은 보안 우회가 아닌 수업용 퍼즐입니다.</p></li>
-                  <li><b>가상 데이터</b><p>갤러리, 메시지, 통화기록, 메모에 사건 자료를 분산 배치합니다.</p></li>
-                  <li><b>증거 코드</b><p>삭제 항목 또는 사건용 메모에서 DF-2048을 찾을 수 있게 합니다.</p></li>
-                  <li><b>비행기 모드</b><p>외부 동기화·알림이 발생하지 않도록 네트워크를 차단합니다.</p></li>
-                </ol>
-              </article>
-              <article>
-                <span>SETUP 02</span>
-                <h2>microSD 사건 데이터</h2>
-                <ol>
-                  <li><b>파일 복사</b><p>IMG_2039.jpg, IMG_2040.jpg, IMG_2041.jpg, IMG_2048.jpg를 저장합니다.</p></li>
-                  <li><b>결정 파일 삭제</b><p>IMG_2048.jpg만 삭제하고 휴지통 기능이 있으면 비웁니다.</p></li>
-                  <li><b>쓰기 중지</b><p>삭제 직후 새 데이터를 저장하지 않습니다.</p></li>
-                  <li><b>도구 점검</b><p>교사가 승인한 무료 복구 도구가 분석 노트북에서 실행되는지 사전 확인합니다.</p></li>
-                  <li><b>복구 위치</b><p>결과를 microSD가 아닌 노트북의 CASE017_RECOVERED 폴더에 저장하게 합니다.</p></li>
-                </ol>
-              </article>
-            </div>
-            <div className="setup-dataset">
-              <span>CASE 017 DATASET MAP</span>
-              <div className="dataset-tree">
-                <b>microSD / DCIM / Camera</b>
-                <p>IMG_2039.jpg <i>원본 복구 가능</i></p>
-                <p>IMG_2040.jpg <i>썸네일만 발견</i></p>
-                <p>IMG_2041.jpg <i>파일 흔적만</i></p>
-                <p>IMG_2048.jpg <i className="critical">삭제 · 사건 핵심</i></p>
-                <p>VID_3310.mp4 <i>복구 불가 예시</i></p>
-              </div>
-              <div className="setup-checklist">
-                <label><input type="checkbox" />공폰 충전·비행기 모드 확인</label>
-                <label><input type="checkbox" />증거봉투 E-01~E-05 부착</label>
-                <label><input type="checkbox" />microSD 5개 삭제 상태 확인</label>
-                <label><input type="checkbox" />카드 리더기·분석 노트북 연결 확인</label>
-                <label><input type="checkbox" />복구 결과 저장 폴더 비우기</label>
-              </div>
-            </div>
+            <CasePreparationCenter
+              onOpenGuide={() => setView("guide")}
+              onOpenSlides={() => setView("slides")}
+              onOpenReset={() => setResetOpen(true)}
+            />
           </section>
         )}
       </div>

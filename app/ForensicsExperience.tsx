@@ -513,11 +513,14 @@ export default function ForensicsExperience() {
   const [pinError, setPinError] = useState("");
   const [searchStarted, setSearchStarted] = useState(false);
   const [searchTime, setSearchTime] = useState(720);
+  const [phoneFindings, setPhoneFindings] = useState({ gallery: false, files: false, storage: false });
   const [traceCode, setTraceCode] = useState("");
   const [traceError, setTraceError] = useState("");
   const [logsRegistered, setLogsRegistered] = useState(false);
   const [recoveryName, setRecoveryName] = useState("");
+  const [recoveryError, setRecoveryError] = useState("");
   const [recoveryProgress, setRecoveryProgress] = useState(0);
+  const [recoveryCodeVerified, setRecoveryCodeVerified] = useState(false);
   const [crossChecked, setCrossChecked] = useState(false);
   const [cctvRegistered, setCctvRegistered] = useState(false);
   const [timelineItems, setTimelineItems] = useState<TimelineItem[]>([
@@ -683,18 +686,21 @@ export default function ForensicsExperience() {
 
   function submitTraceCode() {
     if (traceCode.trim().toUpperCase() !== "DF-2048") {
-      setTraceError("증거폰에서 발견한 코드의 문자·하이픈·숫자를 다시 확인하십시오.");
+      setTraceError("복구 결과의 증거 코드 문자·하이픈·숫자를 다시 확인하십시오.");
       return;
     }
     setTraceError("");
-    addEvidence("deleted-trace");
-    go("dashboard");
+    setRecoveryCodeVerified(true);
+    addEvidence("deleted-trace", "recovered-photo");
   }
 
   function startRecovery() {
-    if (recoveryName.trim().toUpperCase() !== "IMG_2048.JPG") return;
+    if (recoveryName.trim().toUpperCase() !== "IMG_2048.JPG") {
+      setRecoveryError("복구 도구에서 실제로 확인한 파일명을 다시 입력하십시오.");
+      return;
+    }
+    setRecoveryError("");
     setRecoveryProgress(1);
-    window.setTimeout(() => addEvidence("recovered-photo"), 2500);
   }
 
   function moveTimeline(index: number, direction: -1 | 1) {
@@ -966,7 +972,7 @@ export default function ForensicsExperience() {
                 <li>대표 수사관 1인이 개봉</li>
               </ol>
               <div className="ethics-note">
-                수업용 가상 데이터가 담긴 공폰만 조사합니다. 개인 기기는 증거물이 아닙니다.
+                E-01은 실제 갤러리·파일 구조·microSD를 조사하는 수업용 현장 증거물입니다. 개인 기기는 조사하지 않습니다.
               </div>
             </div>
           </div>
@@ -1033,12 +1039,12 @@ export default function ForensicsExperience() {
               <span>FIELD INVESTIGATION · MOBILE DEVICE</span>
               <h1>실제 증거폰 조사</h1>
               <p>
-                이 스마트폰에는 사건 당시의 디지털 흔적이 남아 있습니다. 사건과 관련된
-                디지털 증거를 확보하십시오.
+                디지털 증거는 웹 화면 속 데이터에만 존재하지 않습니다. 증거물 E-01의 실제
+                저장매체와 파일 구조를 조사하여 사건과 관련된 자료를 확보하십시오.
               </p>
               <div className="search-rule">
-                <b>답은 화면에 제공되지 않습니다.</b>
-                <span>어떤 앱과 기록을 먼저 볼지는 수사팀이 결정하십시오.</span>
+                <b>웹앱이 실제 증거물 조사를 대신하지 않습니다.</b>
+                <span>공폰의 기본 갤러리와 기본 파일 앱을 직접 사용하십시오.</span>
               </div>
               <div className="timer-preview">
                 <span>제한시간</span>
@@ -1052,8 +1058,8 @@ export default function ForensicsExperience() {
             <div className="search-active">
               <div className="search-command">
                 <span>현장 조사 진행 중</span>
-                <h1>증거폰에서 사건의 디지털 흔적을 찾으십시오.</h1>
-                <p>발견한 정보는 임의로 수정하거나 삭제하지 말고 기록만 남기십시오.</p>
+                <h1>실제 공폰의 갤러리, 파일 앱, 저장매체를 조사하십시오.</h1>
+                <p>발견한 파일은 임의로 수정하거나 삭제하지 말고 이름·위치·존재 여부만 기록하십시오.</p>
               </div>
               <div className={classNames("countdown", searchTime < 120 && "warning")}>
                 <span>TIME REMAINING</span>
@@ -1065,31 +1071,43 @@ export default function ForensicsExperience() {
               <div className="investigation-notes">
                 <div>
                   <span>수사 원칙 01</span>
-                  <p>발견한 시간, 파일명, 위치를 정확히 적습니다.</p>
+                  <p>기본 갤러리에서 IMG_2039~IMG_2045를 자유롭게 살펴봅니다.</p>
                 </div>
                 <div>
                   <span>수사 원칙 02</span>
-                  <p>‘사실’과 ‘추측’을 구분합니다.</p>
+                  <p>내 파일에서 Documents, Download, DCIM 위치를 확인합니다.</p>
                 </div>
                 <div>
                   <span>수사 원칙 03</span>
-                  <p>수업용 데이터 외 개인정보는 열지 않습니다.</p>
+                  <p>결정적 사진의 부재와 외부 저장매체 존재를 구분해 기록합니다.</p>
                 </div>
               </div>
-              <div className="trace-entry">
-                <label htmlFor="trace-code">발견한 증거 코드를 입력하십시오.</label>
-                <div>
-                  <input
-                    id="trace-code"
-                    value={traceCode}
-                    onChange={(event) => setTraceCode(event.target.value)}
-                    placeholder="DF-0000"
-                    autoComplete="off"
-                  />
-                  <button type="button" onClick={submitTraceCode}>분석 요청</button>
-                </div>
-                {traceError && <p className="error-message">{traceError}</p>}
+              <div className="physical-search-list">
+                {[
+                  ["gallery", "실제 갤러리의 사진과 파일명을 확인했습니다."],
+                  ["files", "실제 파일 앱의 Documents, Download, DCIM을 확인했습니다."],
+                  ["storage", "결정적 사진이 보이지 않으며 microSD가 있음을 확인했습니다."],
+                ].map(([id, label]) => (
+                  <label key={id} className={phoneFindings[id as keyof typeof phoneFindings] ? "checked" : ""}>
+                    <input
+                      type="checkbox"
+                      checked={phoneFindings[id as keyof typeof phoneFindings]}
+                      onChange={() => setPhoneFindings((current) => ({ ...current, [id]: !current[id as keyof typeof current] }))}
+                    />
+                    <span>{label}</span>
+                  </label>
+                ))}
               </div>
+              <div className="physical-web-boundary">
+                <b>실물 조사 결과</b>
+                <p>현재 공폰에서 결정적 사진의 원본은 확인되지 않습니다. 이제 웹 포렌식 시스템의 추출 데이터로 삭제 흔적과 통신 기록을 확인하십시오.</p>
+              </div>
+              <PrimaryButton
+                onClick={() => go("dashboard")}
+                disabled={!Object.values(phoneFindings).every(Boolean)}
+              >
+                웹 추출 데이터와 대조
+              </PrimaryButton>
             </div>
           )}
         </section>
@@ -1098,9 +1116,9 @@ export default function ForensicsExperience() {
       {stage === "dashboard" && (
         <section className="scene dashboard-scene">
           <MissionHeading
-            eyebrow="FORENSIC ANALYSIS CONSOLE"
-            title="삭제 흔적이 확인되었습니다."
-            description="한 개의 기록만으로 결론 내리지 말고 같은 시간대의 다른 로그와 비교하십시오."
+            eyebrow="MOBILE EXTRACTION · FORENSIC ANALYSIS"
+            title="공폰에서 추출된 기록을 분석하십시오."
+            description="이 화면은 가짜 채팅 앱이 아니라 모바일 데이터 추출 결과입니다. 파일시스템, 메시지와 통화기록의 시간을 다른 증거와 비교하십시오."
           />
           <div className="analysis-console">
             <aside className="console-index">
@@ -1108,7 +1126,7 @@ export default function ForensicsExperience() {
               <strong>{groupId}</strong>
               <dl>
                 <div><dt>DEVICE</dt><dd>Samsung Galaxy</dd></div>
-                <div><dt>MODE</dt><dd>READ-ONLY REVIEW</dd></div>
+                <div><dt>MODE</dt><dd>LOGICAL EXTRACTION</dd></div>
                 <div><dt>INTEGRITY</dt><dd>BASELINE RECORDED</dd></div>
               </dl>
             </aside>
@@ -1140,30 +1158,44 @@ export default function ForensicsExperience() {
               </div>
               <div className="correlated-logs">
                 <div className="log-title">
-                  <span>CORRELATED DEVICE LOGS</span>
-                  <b>18:40~18:45</b>
+                  <span>추출 데이터 · 통신 기록</span>
+                  <b>18:27~18:45</b>
                 </div>
-                <div className={classNames("log-records", logsRegistered && "revealed")}>
-                  <div>
-                    <time>18:40:52</time>
-                    <span>MESSAGE</span>
-                    <p>“행사실 앞에 둔 것 확인했어.”</p>
-                  </div>
-                  <div>
-                    <time>18:44:12</time>
-                    <span>CALL</span>
-                    <p>박도윤 ↔ 목격자 · 00:38</p>
-                  </div>
+                <div className={classNames("extraction-record-groups", logsRegistered && "revealed")}>
+                  <section className="extraction-record-set">
+                    <header><span>MOBILE EXTRACTION</span><b>MESSAGE RECORD</b><small>메시지 기록</small></header>
+                    {[
+                      ["18:27", "C", "행사실 쪽에 사람 있어?"],
+                      ["18:31", "B", "나 지금 체육관이야."],
+                      ["18:36", "C", "사진 찍었어?"],
+                      ["18:38", "목격자", "응. 근데 이상한 사람이 있었어."],
+                      ["18:40:52", "C", "행사실 앞에 둔 것 확인했어."],
+                      ["18:41", "C", "그 사진 누구한테 보냈어?"],
+                    ].map(([time, sender, message]) => (
+                      <div className="extraction-record-row" key={`${time}-${sender}`}><time>{time}</time><b>{sender}</b><p>{message}</p></div>
+                    ))}
+                  </section>
+                  <section className="extraction-record-set">
+                    <header><span>MOBILE EXTRACTION</span><b>CALL RECORD</b><small>통화 기록</small></header>
+                    {[
+                      ["18:29", "B → 친구", "2분 14초"],
+                      ["18:41", "C → 목격자", "43초"],
+                      ["18:44:12", "C → 목격자", "38초"],
+                      ["18:45", "C → 미확인 번호", "1분 02초"],
+                    ].map(([time, target, duration]) => (
+                      <div className="extraction-record-row" key={`${time}-${target}`}><time>{time}</time><b>{target}</b><p>{duration}</p></div>
+                    ))}
+                  </section>
                 </div>
                 {!logsRegistered && (
                   <button
                     type="button"
                     onClick={() => {
                       setLogsRegistered(true);
-                      addEvidence("message", "call");
+                      addEvidence("deleted-trace", "message", "call");
                     }}
                   >
-                    같은 시간대 통신 로그 판독
+                    모바일 추출 기록 판독
                   </button>
                 )}
               </div>
@@ -1184,7 +1216,7 @@ export default function ForensicsExperience() {
         <section className="scene recovery-scene">
           <MissionHeading
             eyebrow="MISSION 02 · DELETE DATA RECOVERY"
-            title="삭제된 파일은 모두 같은 상태가 아닙니다."
+            title="현재 파일과 삭제 흔적을 구분하십시오."
             description="microSD를 리더기에 연결하고 지정된 복구 도구에서 직접 검색한 결과를 이 시스템과 대조하십시오."
           />
           <div className="recovery-layout">
@@ -1209,15 +1241,15 @@ export default function ForensicsExperience() {
                 <strong>READ ONLY</strong>
               </div>
               <div className="file-state-list">
-                <div><span>IMG_2039.jpg</span><i style={{ width: "100%" }} /><b>원본 복구 가능</b></div>
-                <div><span>IMG_2040.jpg</span><i style={{ width: "31%" }} /><b>썸네일만 발견</b></div>
-                <div><span>IMG_2041.jpg</span><i style={{ width: "8%" }} /><b>파일 흔적만 확인</b></div>
+                <div><span>IMG_2039.jpg</span><i style={{ width: "100%" }} /><b>현재 파일 · 정상 열림</b></div>
+                <div><span>IMG_2040.jpg</span><i style={{ width: "100%" }} /><b>현재 파일 · 정상 열림</b></div>
+                <div><span>IMG_2041.jpg</span><i style={{ width: "100%" }} /><b>현재 파일 · 정상 열림</b></div>
+                <div><span>IMG_2042.jpg</span><i style={{ width: "100%" }} /><b>현재 파일 · 정상 열림</b></div>
                 <div className={recoveryProgress > 0 ? "active" : ""}>
                   <span>IMG_2048.jpg</span>
                   <i style={{ width: `${recoveryProgress}%` }} />
                   <b>{recoveryProgress > 0 ? `${recoveryProgress}%` : "분석 대기"}</b>
                 </div>
-                <div><span>VID_3310.mp4</span><i style={{ width: "2%" }} /><b>복구 불가</b></div>
               </div>
               <div className="recovery-entry">
                 <label htmlFor="recovery-file">복구 도구에서 확인한 결정적 파일명</label>
@@ -1230,6 +1262,7 @@ export default function ForensicsExperience() {
                   />
                   <button type="button" onClick={startRecovery}>복구 결과 대조</button>
                 </div>
+                {recoveryError && <p className="error-message">{recoveryError}</p>}
               </div>
               {recoveryProgress > 0 && (
                 <div className="recovered-preview">
@@ -1240,8 +1273,7 @@ export default function ForensicsExperience() {
                       opacity: Math.max(0.3, recoveryProgress / 100),
                     }}
                   >
-                    <img src="/assets/cctv-hallway.png" alt="복구 중인 목격 사진 배경" />
-                    <img src="/assets/cctv-person-c.png" alt="검은 후드티 인물" />
+                    <img src="/case017/sd-pack/IMG_2048.jpg" alt="microSD에서 복구한 행사실 복도 목격 사진" />
                   </div>
                   <div>
                     <span>RECOVERED ARTIFACT</span>
@@ -1253,13 +1285,33 @@ export default function ForensicsExperience() {
                   </div>
                 </div>
               )}
+              {recoveryProgress >= 94 && (
+                <div className={classNames("trace-entry", "recovery-code-entry", recoveryCodeVerified && "verified")}>
+                  <label htmlFor="trace-code">복구 결과의 증거 코드를 웹 시스템에 등록하십시오.</label>
+                  <div>
+                    <input
+                      id="trace-code"
+                      value={traceCode}
+                      onChange={(event) => setTraceCode(event.target.value)}
+                      placeholder="DF-0000"
+                      autoComplete="off"
+                      disabled={recoveryCodeVerified}
+                    />
+                    <button type="button" onClick={submitTraceCode} disabled={recoveryCodeVerified}>
+                      {recoveryCodeVerified ? "등록 완료" : "증거 코드 등록"}
+                    </button>
+                  </div>
+                  {traceError && <p className="error-message">{traceError}</p>}
+                  {recoveryCodeVerified && <p className="success-message">DF-2048이 E-02·E-03 증거로 등록되었습니다.</p>}
+                </div>
+              )}
             </div>
           </div>
           <div className="recovery-principle">
             <b>기억할 원칙</b>
             <p>삭제했다고 항상 복구되는 것도, 복구됐다고 곧바로 범죄 증거가 되는 것도 아닙니다.</p>
           </div>
-          <PrimaryButton onClick={() => go("metadata")} disabled={recoveryProgress < 94}>
+          <PrimaryButton onClick={() => go("metadata")} disabled={recoveryProgress < 94 || !recoveryCodeVerified}>
             복구 파일 메타데이터 분석
           </PrimaryButton>
         </section>
@@ -1275,8 +1327,7 @@ export default function ForensicsExperience() {
           <div className="metadata-workbench">
             <div className="photo-inspector">
               <div className="photo-frame">
-                <img src="/assets/cctv-hallway.png" alt="행사실 복도 목격 사진" />
-                <img className="photo-subject" src="/assets/cctv-person-c.png" alt="검은 후드티 인물" />
+                <img src="/case017/sd-pack/IMG_2048.jpg" alt="복구된 행사실 복도 목격 사진" />
                 <div className="focus-box"><span>SUBJECT 01</span></div>
               </div>
               <div className="photo-hypothesis">
