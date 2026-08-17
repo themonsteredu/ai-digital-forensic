@@ -482,6 +482,28 @@ function AccessScreen({ onComplete }: { onComplete: () => void }) {
 
 type Position = { x: number; y: number };
 
+const DESKTOP_BOARD_POSITIONS: Record<string, Position> = {
+  "deleted-trace": { x: 7, y: 12 },
+  "recovered-photo": { x: 34, y: 6 },
+  metadata: { x: 69, y: 11 },
+  location: { x: 70, y: 58 },
+  message: { x: 39, y: 69 },
+  call: { x: 6, y: 59 },
+  cctv: { x: 74, y: 34 },
+  "suspect-C": { x: 42, y: 38 },
+};
+
+const COMPACT_BOARD_POSITIONS: Record<string, Position> = {
+  "deleted-trace": { x: 3, y: 7 },
+  message: { x: 53, y: 7 },
+  call: { x: 3, y: 24 },
+  "recovered-photo": { x: 53, y: 24 },
+  metadata: { x: 3, y: 42 },
+  location: { x: 53, y: 42 },
+  cctv: { x: 3, y: 60 },
+  "suspect-C": { x: 53, y: 60 },
+};
+
 export default function ForensicsExperience() {
   const [mounted, setMounted] = useState(false);
   const [stage, setStage] = useState<StageId>("access");
@@ -519,16 +541,13 @@ export default function ForensicsExperience() {
   const [reportError, setReportError] = useState("");
   const [reconstructionBeat, setReconstructionBeat] = useState(0);
   const [teacherHint, setTeacherHint] = useState<{ text: string; sentAt: string } | null>(null);
-  const [positions, setPositions] = useState<Record<string, Position>>({
-    "deleted-trace": { x: 7, y: 12 },
-    "recovered-photo": { x: 34, y: 6 },
-    metadata: { x: 69, y: 11 },
-    location: { x: 70, y: 58 },
-    message: { x: 39, y: 69 },
-    call: { x: 6, y: 59 },
-    cctv: { x: 74, y: 34 },
-    "suspect-C": { x: 42, y: 38 },
-  });
+  const [positions, setPositions] = useState<Record<string, Position>>(
+    DESKTOP_BOARD_POSITIONS,
+  );
+  const [compactPositions, setCompactPositions] = useState<Record<string, Position>>(
+    COMPACT_BOARD_POSITIONS,
+  );
+  const [compactBoard, setCompactBoard] = useState(false);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{
     id: string;
@@ -545,6 +564,7 @@ export default function ForensicsExperience() {
     reportEvidence.filter((id) =>
       ["recovered-photo", "metadata", "cctv", "message", "call"].includes(id),
     ).length >= 2;
+  const boardPositions = compactBoard ? compactPositions : positions;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -610,6 +630,14 @@ export default function ForensicsExperience() {
       window.removeEventListener("storage", readHint);
     };
   }, [groupId, mounted]);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 620px)");
+    const syncBoardLayout = () => setCompactBoard(query.matches);
+    syncBoardLayout();
+    query.addEventListener("change", syncBoardLayout);
+    return () => query.removeEventListener("change", syncBoardLayout);
+  }, []);
 
   useEffect(() => {
     if (!searchStarted || stage !== "phone-search" || searchTime <= 0) return;
@@ -708,7 +736,7 @@ export default function ForensicsExperience() {
   function handleBoardPointerDown(id: string, event: ReactPointerEvent<HTMLButtonElement>) {
     if (linkMode || !boardRef.current) return;
     const rect = boardRef.current.getBoundingClientRect();
-    const current = positions[id];
+    const current = boardPositions[id];
     dragRef.current = {
       id,
       offsetX: event.clientX - (rect.left + (current.x / 100) * rect.width),
@@ -724,10 +752,11 @@ export default function ForensicsExperience() {
     const x = ((event.clientX - rect.left - dragRef.current.offsetX) / rect.width) * 100;
     const y = ((event.clientY - rect.top - dragRef.current.offsetY) / rect.height) * 100;
     dragRef.current.moved = true;
-    setPositions((current) => ({
+    const updatePositions = compactBoard ? setCompactPositions : setPositions;
+    updatePositions((current) => ({
       ...current,
       [dragRef.current!.id]: {
-        x: Math.max(0, Math.min(79, x)),
+        x: Math.max(0, Math.min(compactBoard ? 56 : 79, x)),
         y: Math.max(0, Math.min(77, y)),
       },
     }));
@@ -749,11 +778,12 @@ export default function ForensicsExperience() {
   }
 
   function connectionStyle(from: string, to: string) {
-    const start = positions[from];
-    const end = positions[to];
-    const x1 = start.x + 10;
+    const start = boardPositions[from];
+    const end = boardPositions[to];
+    const nodeCenterX = compactBoard ? 21 : 10;
+    const x1 = start.x + nodeCenterX;
     const y1 = start.y + 8;
-    const x2 = end.x + 10;
+    const x2 = end.x + nodeCenterX;
     const y2 = end.y + 8;
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -1434,7 +1464,7 @@ export default function ForensicsExperience() {
               />
             ))}
             {[...evidenceIds, "suspect-C"].map((id, index) => {
-              const position = positions[id] ?? { x: 10 + index * 8, y: 10 + index * 7 };
+              const position = boardPositions[id] ?? { x: 10 + index * 8, y: 10 + index * 7 };
               const evidence = id === "suspect-C" ? null : EVIDENCE[id as EvidenceId];
               return (
                 <button
