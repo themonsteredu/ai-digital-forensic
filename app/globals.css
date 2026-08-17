@@ -207,8 +207,8 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
 /* Perspective CCTV staging: background, doorway depth, actors, foreground door frame */
 .cctv-scene{isolation:isolate;transform-origin:75% 62%}
 .cctv-hallway{z-index:0}
-.cctv-doorway-depth{position:absolute;z-index:1;inset:0;opacity:0;background:linear-gradient(90deg,rgba(1,4,7,.8),rgba(4,9,13,.97));clip-path:polygon(74.6% 20%,78.5% 20%,78.2% 91.8%,75% 90.5%);transition:opacity .32s ease;pointer-events:none}
-.cctv-doorway-depth.active{opacity:.82}
+.cctv-doorway-depth{position:absolute;z-index:1;inset:0;opacity:0;background:linear-gradient(90deg,rgba(1,4,7,.25),rgba(2,6,9,.72));clip-path:polygon(75.1% 20.5%,78.2% 20.2%,77.9% 91.6%,75.3% 90.7%);filter:blur(.35px);mix-blend-mode:multiply;transition:opacity .32s ease;pointer-events:none}
+.cctv-doorway-depth.active{opacity:.42}
 .cctv-person{z-index:2;width:15.2%;height:auto;max-width:none;bottom:auto;object-fit:contain;filter:grayscale(.74) saturate(.52) contrast(.96) brightness(.69);transform-origin:50% 94%;will-change:left,bottom,transform,opacity;transition:left 80ms linear,bottom 80ms linear,transform 80ms linear,opacity 120ms ease}
 .cctv-person.person-c{width:15.8%;height:auto}
 .cctv-door-occlusion{position:absolute;z-index:3;inset:0;background-image:url("/assets/cctv-hallway.png");background-position:center;background-size:100% 100%;clip-path:polygon(76.8% 17.5%,90.3% 18.3%,88.7% 92.8%,76.7% 91.3%);filter:grayscale(.78) saturate(.48) contrast(1.06) brightness(.78);pointer-events:none}
