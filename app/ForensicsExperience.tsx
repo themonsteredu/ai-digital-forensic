@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import {
@@ -58,6 +59,135 @@ function cctvClock(time: number) {
   return addClockSeconds("18:47:03", Math.floor((time - 7.2) * 1.5));
 }
 
+function clamp01(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function easeInOut(value: number) {
+  const progress = clamp01(value);
+  return progress < 0.5
+    ? 4 * progress * progress * progress
+    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+}
+
+function segmentProgress(time: number, start: number, end: number) {
+  return easeInOut((time - start) / (end - start));
+}
+
+function interpolate(from: number, to: number, progress: number) {
+  return from + (to - from) * progress;
+}
+
+function actorStyle({
+  x,
+  bottom,
+  scale,
+  opacity = 1,
+  bob = 0,
+  rotate = 0,
+}: {
+  x: number;
+  bottom: number;
+  scale: number;
+  opacity?: number;
+  bob?: number;
+  rotate?: number;
+}): CSSProperties {
+  return {
+    left: `${x}%`,
+    bottom: `${bottom}%`,
+    opacity,
+    transform: `translateX(-50%) translateY(${bob}px) scale(${scale}) rotate(${rotate}deg)`,
+  };
+}
+
+function personAPose(time: number): CSSProperties | null {
+  if (time >= 6.85) return null;
+
+  if (time < 0.7) {
+    const progress = segmentProgress(time, 0, 0.7);
+    return actorStyle({
+      x: interpolate(27, 33, progress),
+      bottom: interpolate(42, 38, progress),
+      scale: interpolate(0.5, 0.6, progress),
+      opacity: progress,
+      bob: Math.sin(time * 13) * 1.2,
+    });
+  }
+
+  if (time < 3.05) {
+    const progress = segmentProgress(time, 0.7, 3.05);
+    return actorStyle({
+      x: interpolate(33, 63.5, progress),
+      bottom: interpolate(38, 10, progress),
+      scale: interpolate(0.6, 1.02, progress),
+      bob: Math.sin(time * 13) * 1.5,
+      rotate: interpolate(-0.6, 0, progress),
+    });
+  }
+
+  if (time < 3.6) {
+    const progress = segmentProgress(time, 3.05, 3.6);
+    return actorStyle({
+      x: interpolate(63.5, 67, progress),
+      bottom: interpolate(10, 7.8, progress),
+      scale: interpolate(1.02, 1.08, progress),
+      bob: Math.sin(time * 10) * 0.8,
+    });
+  }
+
+  if (time < 4.2) {
+    return actorStyle({ x: 67, bottom: 7.8, scale: 1.08 });
+  }
+
+  const progress = segmentProgress(time, 4.2, 6.85);
+  return actorStyle({
+    x: interpolate(67, 80.5, progress),
+    bottom: interpolate(7.8, 11.5, progress),
+    scale: interpolate(1.08, 0.83, progress),
+    opacity: interpolate(1, 0.12, clamp01((progress - 0.56) / 0.44)),
+    bob: Math.sin(time * 11) * 0.7,
+    rotate: interpolate(0, 1.3, progress),
+  });
+}
+
+function personCPose(time: number): CSSProperties | null {
+  if (time < 7.2 || time > 11.4) return null;
+
+  if (time < 8.3) {
+    const progress = segmentProgress(time, 7.2, 8.3);
+    return actorStyle({
+      x: interpolate(82.5, 75, progress),
+      bottom: interpolate(12.5, 8.5, progress),
+      scale: interpolate(0.8, 1.08, progress),
+      opacity: interpolate(0.25, 1, progress),
+      bob: Math.sin(time * 11) * 0.8,
+      rotate: interpolate(1.2, 0, progress),
+    });
+  }
+
+  if (time < 10.8) {
+    const progress = segmentProgress(time, 8.3, 10.8);
+    return actorStyle({
+      x: interpolate(75, 45, progress),
+      bottom: interpolate(8.5, 18, progress),
+      scale: interpolate(1.08, 0.77, progress),
+      bob: Math.sin(time * 13) * 1.35,
+      rotate: interpolate(0, -0.7, progress),
+    });
+  }
+
+  const progress = segmentProgress(time, 10.8, 11.4);
+  return actorStyle({
+    x: interpolate(45, 27, progress),
+    bottom: interpolate(18, 30, progress),
+    scale: interpolate(0.77, 0.58, progress),
+    opacity: interpolate(1, 0.55, progress),
+    bob: Math.sin(time * 13) * 1.1,
+    rotate: -0.7,
+  });
+}
+
 function CctvPlayer({
   analysis = false,
   onRegister,
@@ -86,19 +216,9 @@ function CctvPlayer({
     return () => window.clearInterval(timer);
   }, [playing]);
 
-  const personA = useMemo(() => {
-    if (time >= 7.2) return null;
-    let x = -12;
-    if (time < 3.1) x = -12 + time * 18;
-    else if (time < 4.15) x = 44;
-    else x = 44 + (time - 4.15) * 21;
-    return { left: `${x}%` };
-  }, [time]);
-
-  const personC = useMemo(() => {
-    if (time < 7.2 || time > 11.4) return null;
-    return { left: `${94 - (time - 7.2) * 9.6}%` };
-  }, [time]);
+  const personA = useMemo(() => personAPose(time), [time]);
+  const personC = useMemo(() => personCPose(time), [time]);
+  const doorwayActive = (time >= 3.85 && time < 7.2) || (time >= 7.2 && time <= 8.65);
 
   function registerFrame() {
     const validFrame = time >= 8.6 && time <= 10.7 && zoomed;
@@ -129,6 +249,10 @@ function CctvPlayer({
             src="/assets/cctv-hallway.png"
             alt="행사실 앞 학교 복도 CCTV"
           />
+          <div
+            className={classNames("cctv-doorway-depth", doorwayActive && "active")}
+            aria-hidden="true"
+          />
           {personA && (
             <img
               className="cctv-person person-a"
@@ -145,6 +269,7 @@ function CctvPlayer({
               alt="검은 후드티를 입고 복도를 지나가는 인물"
             />
           )}
+          <div className="cctv-door-occlusion" aria-hidden="true" />
           <div className="cctv-scanlines" />
           <div className="cctv-vignette" />
           <div className={classNames("signal-noise", signalLost && "active")} />
@@ -308,14 +433,17 @@ function AccessScreen({ onComplete }: { onComplete: () => void }) {
       <div className="access-grid" />
       <div className="access-corners" aria-hidden="true" />
       <section className={classNames("access-console", complete && "complete")}>
-        <span className="lab-index">NATIONAL DIGITAL EVIDENCE UNIT · NODE 04</span>
+        <span className="lab-index">디지털 증거 분석 시스템 · STUDENT ACCESS</span>
         <div className="access-mark" aria-hidden="true">
           <span />
           <span />
           <span />
         </div>
-        <h1>DIGITAL FORENSICS LAB</h1>
-        <h2>SECURE ACCESS SYSTEM</h2>
+        <span className="access-system-label">
+          DIGITAL FORENSICS LAB · SECURE ACCESS SYSTEM
+        </span>
+        <h1>디지털 포렌식 수사실</h1>
+        <p className="access-role">오늘부터 당신은 디지털 포렌식 수사관입니다.</p>
         {!complete ? (
           <div className="access-progress">
             <div>
@@ -333,14 +461,16 @@ function AccessScreen({ onComplete }: { onComplete: () => void }) {
           </div>
         ) : (
           <div className="case-alert">
+            <div className="case-alert-title">
+              <span>CASE 017</span>
+              <strong>사라진 목격 사진</strong>
+            </div>
             <div className="alert-line">
               <span>PRIORITY 01</span>
               <b>긴급 사건이 접수되었습니다.</b>
             </div>
-            <strong>CASE #017</strong>
-            <p>사라진 목격 사진</p>
             <PrimaryButton tone="red" onClick={onComplete}>
-              긴급 사건 열기
+              사건 파일 열기
             </PrimaryButton>
           </div>
         )}
@@ -351,6 +481,28 @@ function AccessScreen({ onComplete }: { onComplete: () => void }) {
 }
 
 type Position = { x: number; y: number };
+
+const DESKTOP_BOARD_POSITIONS: Record<string, Position> = {
+  "deleted-trace": { x: 7, y: 12 },
+  "recovered-photo": { x: 34, y: 6 },
+  metadata: { x: 69, y: 11 },
+  location: { x: 70, y: 58 },
+  message: { x: 39, y: 69 },
+  call: { x: 6, y: 59 },
+  cctv: { x: 74, y: 34 },
+  "suspect-C": { x: 42, y: 38 },
+};
+
+const COMPACT_BOARD_POSITIONS: Record<string, Position> = {
+  "deleted-trace": { x: 3, y: 7 },
+  message: { x: 53, y: 7 },
+  call: { x: 3, y: 24 },
+  "recovered-photo": { x: 53, y: 24 },
+  metadata: { x: 3, y: 42 },
+  location: { x: 53, y: 42 },
+  cctv: { x: 3, y: 60 },
+  "suspect-C": { x: 53, y: 60 },
+};
 
 export default function ForensicsExperience() {
   const [mounted, setMounted] = useState(false);
@@ -389,16 +541,13 @@ export default function ForensicsExperience() {
   const [reportError, setReportError] = useState("");
   const [reconstructionBeat, setReconstructionBeat] = useState(0);
   const [teacherHint, setTeacherHint] = useState<{ text: string; sentAt: string } | null>(null);
-  const [positions, setPositions] = useState<Record<string, Position>>({
-    "deleted-trace": { x: 7, y: 12 },
-    "recovered-photo": { x: 34, y: 6 },
-    metadata: { x: 69, y: 11 },
-    location: { x: 70, y: 58 },
-    message: { x: 39, y: 69 },
-    call: { x: 6, y: 59 },
-    cctv: { x: 74, y: 34 },
-    "suspect-C": { x: 42, y: 38 },
-  });
+  const [positions, setPositions] = useState<Record<string, Position>>(
+    DESKTOP_BOARD_POSITIONS,
+  );
+  const [compactPositions, setCompactPositions] = useState<Record<string, Position>>(
+    COMPACT_BOARD_POSITIONS,
+  );
+  const [compactBoard, setCompactBoard] = useState(false);
   const boardRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<{
     id: string;
@@ -415,6 +564,7 @@ export default function ForensicsExperience() {
     reportEvidence.filter((id) =>
       ["recovered-photo", "metadata", "cctv", "message", "call"].includes(id),
     ).length >= 2;
+  const boardPositions = compactBoard ? compactPositions : positions;
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -480,6 +630,14 @@ export default function ForensicsExperience() {
       window.removeEventListener("storage", readHint);
     };
   }, [groupId, mounted]);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 620px)");
+    const syncBoardLayout = () => setCompactBoard(query.matches);
+    syncBoardLayout();
+    query.addEventListener("change", syncBoardLayout);
+    return () => query.removeEventListener("change", syncBoardLayout);
+  }, []);
 
   useEffect(() => {
     if (!searchStarted || stage !== "phone-search" || searchTime <= 0) return;
@@ -578,7 +736,7 @@ export default function ForensicsExperience() {
   function handleBoardPointerDown(id: string, event: ReactPointerEvent<HTMLButtonElement>) {
     if (linkMode || !boardRef.current) return;
     const rect = boardRef.current.getBoundingClientRect();
-    const current = positions[id];
+    const current = boardPositions[id];
     dragRef.current = {
       id,
       offsetX: event.clientX - (rect.left + (current.x / 100) * rect.width),
@@ -594,10 +752,11 @@ export default function ForensicsExperience() {
     const x = ((event.clientX - rect.left - dragRef.current.offsetX) / rect.width) * 100;
     const y = ((event.clientY - rect.top - dragRef.current.offsetY) / rect.height) * 100;
     dragRef.current.moved = true;
-    setPositions((current) => ({
+    const updatePositions = compactBoard ? setCompactPositions : setPositions;
+    updatePositions((current) => ({
       ...current,
       [dragRef.current!.id]: {
-        x: Math.max(0, Math.min(79, x)),
+        x: Math.max(0, Math.min(compactBoard ? 56 : 79, x)),
         y: Math.max(0, Math.min(77, y)),
       },
     }));
@@ -619,11 +778,12 @@ export default function ForensicsExperience() {
   }
 
   function connectionStyle(from: string, to: string) {
-    const start = positions[from];
-    const end = positions[to];
-    const x1 = start.x + 10;
+    const start = boardPositions[from];
+    const end = boardPositions[to];
+    const nodeCenterX = compactBoard ? 21 : 10;
+    const x1 = start.x + nodeCenterX;
     const y1 = start.y + 8;
-    const x2 = end.x + 10;
+    const x2 = end.x + nodeCenterX;
     const y2 = end.y + 8;
     const dx = x2 - x1;
     const dy = y2 - y1;
@@ -1304,7 +1464,7 @@ export default function ForensicsExperience() {
               />
             ))}
             {[...evidenceIds, "suspect-C"].map((id, index) => {
-              const position = positions[id] ?? { x: 10 + index * 8, y: 10 + index * 7 };
+              const position = boardPositions[id] ?? { x: 10 + index * 8, y: 10 + index * 7 };
               const evidence = id === "suspect-C" ? null : EVIDENCE[id as EvidenceId];
               return (
                 <button
