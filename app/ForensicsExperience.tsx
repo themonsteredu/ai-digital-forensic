@@ -7,6 +7,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import {
@@ -58,6 +59,135 @@ function cctvClock(time: number) {
   return addClockSeconds("18:47:03", Math.floor((time - 7.2) * 1.5));
 }
 
+function clamp01(value: number) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function easeInOut(value: number) {
+  const progress = clamp01(value);
+  return progress < 0.5
+    ? 4 * progress * progress * progress
+    : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+}
+
+function segmentProgress(time: number, start: number, end: number) {
+  return easeInOut((time - start) / (end - start));
+}
+
+function interpolate(from: number, to: number, progress: number) {
+  return from + (to - from) * progress;
+}
+
+function actorStyle({
+  x,
+  bottom,
+  scale,
+  opacity = 1,
+  bob = 0,
+  rotate = 0,
+}: {
+  x: number;
+  bottom: number;
+  scale: number;
+  opacity?: number;
+  bob?: number;
+  rotate?: number;
+}): CSSProperties {
+  return {
+    left: `${x}%`,
+    bottom: `${bottom}%`,
+    opacity,
+    transform: `translateX(-50%) translateY(${bob}px) scale(${scale}) rotate(${rotate}deg)`,
+  };
+}
+
+function personAPose(time: number): CSSProperties | null {
+  if (time >= 6.85) return null;
+
+  if (time < 0.7) {
+    const progress = segmentProgress(time, 0, 0.7);
+    return actorStyle({
+      x: interpolate(27, 33, progress),
+      bottom: interpolate(42, 38, progress),
+      scale: interpolate(0.5, 0.6, progress),
+      opacity: progress,
+      bob: Math.sin(time * 13) * 1.2,
+    });
+  }
+
+  if (time < 3.05) {
+    const progress = segmentProgress(time, 0.7, 3.05);
+    return actorStyle({
+      x: interpolate(33, 63.5, progress),
+      bottom: interpolate(38, 10, progress),
+      scale: interpolate(0.6, 1.02, progress),
+      bob: Math.sin(time * 13) * 1.5,
+      rotate: interpolate(-0.6, 0, progress),
+    });
+  }
+
+  if (time < 3.6) {
+    const progress = segmentProgress(time, 3.05, 3.6);
+    return actorStyle({
+      x: interpolate(63.5, 67, progress),
+      bottom: interpolate(10, 7.8, progress),
+      scale: interpolate(1.02, 1.08, progress),
+      bob: Math.sin(time * 10) * 0.8,
+    });
+  }
+
+  if (time < 4.2) {
+    return actorStyle({ x: 67, bottom: 7.8, scale: 1.08 });
+  }
+
+  const progress = segmentProgress(time, 4.2, 6.85);
+  return actorStyle({
+    x: interpolate(67, 80.5, progress),
+    bottom: interpolate(7.8, 11.5, progress),
+    scale: interpolate(1.08, 0.83, progress),
+    opacity: interpolate(1, 0.12, clamp01((progress - 0.56) / 0.44)),
+    bob: Math.sin(time * 11) * 0.7,
+    rotate: interpolate(0, 1.3, progress),
+  });
+}
+
+function personCPose(time: number): CSSProperties | null {
+  if (time < 7.2 || time > 11.4) return null;
+
+  if (time < 8.3) {
+    const progress = segmentProgress(time, 7.2, 8.3);
+    return actorStyle({
+      x: interpolate(82.5, 75, progress),
+      bottom: interpolate(12.5, 8.5, progress),
+      scale: interpolate(0.8, 1.08, progress),
+      opacity: interpolate(0.25, 1, progress),
+      bob: Math.sin(time * 11) * 0.8,
+      rotate: interpolate(1.2, 0, progress),
+    });
+  }
+
+  if (time < 10.8) {
+    const progress = segmentProgress(time, 8.3, 10.8);
+    return actorStyle({
+      x: interpolate(75, 45, progress),
+      bottom: interpolate(8.5, 18, progress),
+      scale: interpolate(1.08, 0.77, progress),
+      bob: Math.sin(time * 13) * 1.35,
+      rotate: interpolate(0, -0.7, progress),
+    });
+  }
+
+  const progress = segmentProgress(time, 10.8, 11.4);
+  return actorStyle({
+    x: interpolate(45, 27, progress),
+    bottom: interpolate(18, 30, progress),
+    scale: interpolate(0.77, 0.58, progress),
+    opacity: interpolate(1, 0.55, progress),
+    bob: Math.sin(time * 13) * 1.1,
+    rotate: -0.7,
+  });
+}
+
 function CctvPlayer({
   analysis = false,
   onRegister,
@@ -86,19 +216,9 @@ function CctvPlayer({
     return () => window.clearInterval(timer);
   }, [playing]);
 
-  const personA = useMemo(() => {
-    if (time >= 7.2) return null;
-    let x = -12;
-    if (time < 3.1) x = -12 + time * 18;
-    else if (time < 4.15) x = 44;
-    else x = 44 + (time - 4.15) * 21;
-    return { left: `${x}%` };
-  }, [time]);
-
-  const personC = useMemo(() => {
-    if (time < 7.2 || time > 11.4) return null;
-    return { left: `${94 - (time - 7.2) * 9.6}%` };
-  }, [time]);
+  const personA = useMemo(() => personAPose(time), [time]);
+  const personC = useMemo(() => personCPose(time), [time]);
+  const doorwayActive = (time >= 3.85 && time < 7.2) || (time >= 7.2 && time <= 8.65);
 
   function registerFrame() {
     const validFrame = time >= 8.6 && time <= 10.7 && zoomed;
@@ -129,6 +249,10 @@ function CctvPlayer({
             src="/assets/cctv-hallway.png"
             alt="행사실 앞 학교 복도 CCTV"
           />
+          <div
+            className={classNames("cctv-doorway-depth", doorwayActive && "active")}
+            aria-hidden="true"
+          />
           {personA && (
             <img
               className="cctv-person person-a"
@@ -145,6 +269,7 @@ function CctvPlayer({
               alt="검은 후드티를 입고 복도를 지나가는 인물"
             />
           )}
+          <div className="cctv-door-occlusion" aria-hidden="true" />
           <div className="cctv-scanlines" />
           <div className="cctv-vignette" />
           <div className={classNames("signal-noise", signalLost && "active")} />
@@ -308,14 +433,17 @@ function AccessScreen({ onComplete }: { onComplete: () => void }) {
       <div className="access-grid" />
       <div className="access-corners" aria-hidden="true" />
       <section className={classNames("access-console", complete && "complete")}>
-        <span className="lab-index">NATIONAL DIGITAL EVIDENCE UNIT · NODE 04</span>
+        <span className="lab-index">디지털 증거 분석 시스템 · STUDENT ACCESS</span>
         <div className="access-mark" aria-hidden="true">
           <span />
           <span />
           <span />
         </div>
-        <h1>DIGITAL FORENSICS LAB</h1>
-        <h2>SECURE ACCESS SYSTEM</h2>
+        <span className="access-system-label">
+          DIGITAL FORENSICS LAB · SECURE ACCESS SYSTEM
+        </span>
+        <h1>디지털 포렌식 수사실</h1>
+        <p className="access-role">오늘부터 당신은 디지털 포렌식 수사관입니다.</p>
         {!complete ? (
           <div className="access-progress">
             <div>
@@ -333,14 +461,16 @@ function AccessScreen({ onComplete }: { onComplete: () => void }) {
           </div>
         ) : (
           <div className="case-alert">
+            <div className="case-alert-title">
+              <span>CASE 017</span>
+              <strong>사라진 목격 사진</strong>
+            </div>
             <div className="alert-line">
               <span>PRIORITY 01</span>
               <b>긴급 사건이 접수되었습니다.</b>
             </div>
-            <strong>CASE #017</strong>
-            <p>사라진 목격 사진</p>
             <PrimaryButton tone="red" onClick={onComplete}>
-              긴급 사건 열기
+              사건 파일 열기
             </PrimaryButton>
           </div>
         )}
