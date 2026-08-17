@@ -417,35 +417,50 @@ def build_number_labels(output: Path) -> None:
 
 def build_suspect_cards(output: Path) -> None:
     suspects = [
-        ("A", "한지원", "축제 회계 봉사", "18:32 행사실 앞 CCTV 포착", "모금함 보관 담당"),
-        ("B", "김민수", "공연 동아리", "검은 후드 소유", "18:39-18:49 체육관 공연 영상"),
-        ("C", "박도윤", "축제 장비 담당", "밝은 운동화와 반사형 가방끈", "행사실 동선을 알고 있음"),
+        ("A", "한지원", "축제 회계 봉사", "모금함을 행사실에 두고 담당 교사를 찾으러 갔어요.", "회색 바람막이 / 흰 운동화", "suspect-a.jpg"),
+        ("B", "김민수", "공연 동아리", "그 시간에는 체육관 무대에서 공연 준비를 하고 있었어요.", "검은 후드티 / 검은 백팩", "suspect-b.jpg"),
+        ("C", "박도윤", "축제 장비 담당", "행사실 앞은 지나갔지만 안에는 들어가지 않았어요.", "검은 후드티 / 밝은 운동화 / 반사형 가방끈", "suspect-c.jpg"),
+        ("D", "서유나", "축제 사진 기록", "운동장 부스 사진을 정리하느라 본관에는 가지 않았어요.", "남색 조끼 / 카메라 스트랩", "suspect-d.jpg"),
     ]
     c = KoreanCanvas(str(output), pagesize=A4, pageCompression=1)
-    page_header(c, "용의자 카드")
-    y = PAGE_H - 46 * mm
-    for code, name, role, clue, note in suspects:
+    page_header(c, "용의자 카드", "SUSPECT A-D")
+    for index, (code, name, role, statement, clothing, image_name) in enumerate(suspects):
+        col, row = index % 2, index // 2
+        x = 18 * mm + col * 92 * mm
+        y = PAGE_H - 44 * mm - row * 111 * mm
         c.setStrokeColor(LINE)
         c.setFillColor(WHITE)
-        c.roundRect(18 * mm, y - 65 * mm, 174 * mm, 58 * mm, 3 * mm, fill=1, stroke=1)
+        c.roundRect(x, y - 103 * mm, 82 * mm, 99 * mm, 3 * mm, fill=1, stroke=1)
         c.setFillColor(NAVY)
-        c.roundRect(23 * mm, y - 55 * mm, 40 * mm, 43 * mm, 2 * mm, fill=1, stroke=0)
+        c.roundRect(x + 5 * mm, y - 52 * mm, 29 * mm, 42 * mm, 2 * mm, fill=1, stroke=0)
+        portrait = PUBLIC / "case017" / "suspects" / image_name
+        c.drawImage(ImageReader(str(portrait)), x + 6 * mm, y - 51 * mm, 27 * mm, 40 * mm, preserveAspectRatio=True, anchor="c", mask="auto")
         c.setFillColor(WHITE)
-        c.setFont("SCoreBold", 9)
-        c.drawCentredString(43 * mm, y - 27 * mm, "SUSPECT")
-        c.setFont("SCoreBold", 28)
-        c.drawCentredString(43 * mm, y - 44 * mm, code)
+        c.setFont("SCoreBold", 7)
+        c.drawString(x + 7 * mm, y - 16 * mm, f"SUSPECT {code}")
         c.setFillColor(NAVY)
-        c.setFont("SCoreBold", 17)
-        c.drawString(72 * mm, y - 24 * mm, name)
-        c.setFont("SCore", 8)
+        c.setFont("SCoreBold", 15)
+        c.drawString(x + 39 * mm, y - 22 * mm, name)
+        c.setFont("SCore", 7.2)
         c.setFillColor(BLUE)
-        c.drawString(72 * mm, y - 33 * mm, role)
+        c.drawString(x + 39 * mm, y - 31 * mm, role)
         c.setFillColor(CHARCOAL)
-        c.setFont("SCore", 8)
-        c.drawString(72 * mm, y - 44 * mm, f"확인 정보: {clue}")
-        c.drawString(72 * mm, y - 53 * mm, f"추가 정보: {note}")
-        y -= 70 * mm
+        c.setFont("SCoreBold", 7.2)
+        c.drawString(x + 39 * mm, y - 40 * mm, "사건 당시 진술")
+        draw_wrapped(c, statement, x + 39 * mm, y - 47 * mm, 36 * mm, size=6.3, leading=3.6 * mm, max_lines=3)
+        c.setFillColor(PALE_BLUE)
+        c.roundRect(x + 5 * mm, y - 71 * mm, 72 * mm, 14 * mm, 1.5 * mm, fill=1, stroke=0)
+        c.setFillColor(BLUE)
+        c.setFont("SCoreBold", 6.5)
+        c.drawString(x + 9 * mm, y - 64 * mm, "복장 정보")
+        draw_wrapped(c, clothing, x + 26 * mm, y - 64 * mm, 47 * mm, size=6.1, leading=3.5 * mm, max_lines=2)
+        c.setFillColor(MUTED)
+        c.setFont("SCore", 6.3)
+        c.drawString(x + 6 * mm, y - 81 * mm, "확인한 사실:")
+        c.setStrokeColor(LINE)
+        c.line(x + 28 * mm, y - 82 * mm, x + 76 * mm, y - 82 * mm)
+        c.drawString(x + 6 * mm, y - 91 * mm, "다른 증거와 연결:")
+        c.line(x + 32 * mm, y - 92 * mm, x + 76 * mm, y - 92 * mm)
     page_footer(c, 1)
     c.save()
 
@@ -457,7 +472,7 @@ EVIDENCE_CARDS = [
     ("E-04", "DEVICE STORAGE", "외부 저장매체 microSD 사용"),
     ("E-05", "EXIF", "촬영 시각 18:42:17"),
     ("E-06", "PHOTO LOCATION", "행사실 동쪽 복도"),
-    ("E-07", "CCTV FRAME", "18:47:06 중요 프레임"),
+    ("E-07", "CCTV FRAME", "18:47:06 / 행사실 동쪽 복도"),
     ("E-08", "VISUAL FEATURE", "밝은 캔버스 운동화"),
     ("E-09", "VISUAL FEATURE", "좁은 반사형 가방끈"),
     ("E-10", "EVENT FILE", "축제 운영 일정표"),
@@ -490,11 +505,13 @@ def build_evidence_cards(output: Path) -> None:
             c.setFillColor(CHARCOAL)
             c.setFont("SCoreBold", 9)
             draw_wrapped(c, detail, x + 6 * mm, y - 31 * mm, 70 * mm, font="SCoreBold", size=9, leading=5 * mm)
-            c.setFont("SCore", 6.5)
+            c.setFont("SCore", 5.8)
             c.setFillColor(MUTED)
-            c.drawString(x + 6 * mm, y - 49 * mm, "관찰 사실:")
+            c.drawString(x + 6 * mm, y - 45 * mm, "이 증거에서 확인한 사실:")
             c.setStrokeColor(LINE)
-            c.line(x + 29 * mm, y - 50 * mm, x + 76 * mm, y - 50 * mm)
+            c.line(x + 40 * mm, y - 46 * mm, x + 76 * mm, y - 46 * mm)
+            c.drawString(x + 6 * mm, y - 51 * mm, "다른 증거와 연결되는 점:")
+            c.line(x + 42 * mm, y - 52 * mm, x + 76 * mm, y - 52 * mm)
         page_footer(c, page_no)
         c.showPage()
         page_no += 1
