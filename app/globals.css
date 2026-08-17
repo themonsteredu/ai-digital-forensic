@@ -322,5 +322,6 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
   .briefing-video>.cctv-shell,.frame-lab>.cctv-shell{width:calc(100% + 20px);margin-left:-10px}
   .cctv-toolbar{padding-inline:7px;font-size:7.5px}
   .briefing-caption{grid-template-columns:1fr;gap:5px}
+  .board-node{width:46%;min-width:0;padding-right:11px;padding-left:11px}
   .report-document{padding-right:14px;padding-left:14px}
 }
