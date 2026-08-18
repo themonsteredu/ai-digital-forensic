@@ -445,3 +445,62 @@ html,body{width:100%;max-width:100%;overflow-x:hidden}
   .phone-quantity-calculator{grid-template-columns:1fr;padding:15px}.phone-quantity-calculator dl{grid-template-columns:1fr 1fr}.phone-quantity-calculator dl>div:nth-child(2){border-right:0}.phone-quantity-calculator dl>div{border-bottom:1px solid #cfdee6}.phone-image-grid.detailed{grid-template-columns:1fr}.phone-image-grid.detailed dl>div{grid-template-columns:105px 1fr}.sd-explainer{grid-template-columns:1fr;padding:13px}.sd-explainer img{height:auto}.prep-checklist.two-column{grid-template-columns:1fr}
   .teacher-preview-bar{height:190px;padding:8px 9px;grid-template-columns:minmax(0,1fr) auto;gap:7px}.teacher-preview-bar>div b{font-size:9px}.teacher-preview-bar nav{display:grid;grid-template-columns:1fr 1fr;width:100%;overflow:visible}.teacher-preview-bar nav :is(button,a,label){min-width:0;width:100%}.teacher-preview-bar nav label{grid-column:1/-1}.teacher-preview-bar nav select{width:100%;flex:1}.preview-shortcut{min-height:36px}.teacher-preview-active{padding-top:260px}.teacher-preview-active .system-hud{top:190px}.teacher-preview-active .scene{min-height:calc(100vh - 260px)}.teacher-preview-bar+.access-screen{padding-top:208px}
 }
+
+/* Student navigation and physical/web evidence roles */
+.student-stage-navigation{position:fixed;z-index:49;top:78px;right:0;left:0;display:grid;height:54px;grid-template-columns:minmax(190px,auto) 1fr minmax(190px,auto);align-items:stretch;border-bottom:1px solid var(--line);background:rgba(5,13,20,.96);backdrop-filter:blur(16px)}
+.student-stage-navigation button{display:grid;grid-template-columns:auto 1fr;grid-template-rows:1fr 1fr;align-items:center;gap:0 10px;min-width:0;padding:7px 22px;border:0;background:rgba(31,91,130,.12);cursor:pointer;text-align:left}
+.student-stage-navigation button:first-child{border-right:1px solid var(--line)}
+.student-stage-navigation button:last-child{grid-template-columns:1fr auto;border-left:1px solid var(--line);text-align:right}
+.student-stage-navigation button>span{grid-row:1/3;color:var(--blue-soft);font-size:20px}
+.student-stage-navigation button>b{align-self:end;color:#e9f2f8;font-size:11px}
+.student-stage-navigation button>small{align-self:start;color:#7790a1;font-size:8px}
+.student-stage-navigation button:hover:not(:disabled){background:rgba(45,125,177,.22)}
+.student-stage-navigation button:disabled{opacity:.3}
+.student-stage-navigation>p{align-self:center;margin:0;color:#657988;font-size:8px;letter-spacing:.04em;text-align:center}
+.forensics-app.has-stage-navigation{padding-top:132px}
+.has-stage-navigation .scene{min-height:calc(100vh - 132px)}
+
+.evidence-role-guide{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%;margin:24px 0 30px}
+.evidence-role-guide article{min-width:0;padding:19px 20px;border:1px solid var(--line);background:rgba(8,20,30,.78)}
+.evidence-role-guide article>span{display:block;margin-bottom:10px;font-size:8px;font-weight:800;letter-spacing:.12em}
+.evidence-role-guide h2{margin:0 0 9px;font-size:15px;line-height:1.35}
+.evidence-role-guide p{margin:0;color:#9eb0bc;font-size:10px;line-height:1.7}
+.evidence-role-guide .physical-device-role{border-top:3px solid var(--amber)}
+.evidence-role-guide .physical-device-role>span{color:var(--amber-soft)}
+.evidence-role-guide .web-system-role{border-top:3px solid var(--blue)}
+.evidence-role-guide .web-system-role>span{color:var(--blue-soft)}
+.evidence-role-guide .sd-media-role{border-top:3px solid var(--green)}
+.evidence-role-guide .sd-media-role>span{color:#8bd2b8}
+.dashboard-scene>.evidence-role-guide{margin-top:-12px}
+.web-extraction-notice{display:grid;grid-template-columns:150px 1fr;gap:14px;margin:12px 0;padding:14px 16px;border-left:3px solid var(--blue);background:rgba(37,106,153,.12)}
+.web-extraction-notice strong{color:var(--blue-soft);font-size:10px}
+.web-extraction-notice p{margin:0;color:#afbec8;font-size:10px;line-height:1.65}
+.active-role-reminder{grid-column:1/-1;display:grid;grid-template-columns:190px 240px minmax(0,1fr);gap:14px;align-items:center;padding:15px 18px;border-left:3px solid var(--amber);background:rgba(217,164,78,.08)}
+.active-role-reminder span{color:var(--amber-soft);font-size:8px;font-weight:800;letter-spacing:.09em}
+.active-role-reminder strong{font-size:11px}
+.active-role-reminder p{margin:0;color:#b9ad8f;font-size:10px;line-height:1.6}
+
+@media(max-width:860px){
+  .student-stage-navigation{top:70px}
+  .forensics-app.has-stage-navigation{padding-top:124px}
+  .has-stage-navigation .scene{min-height:calc(100vh - 124px)}
+  .evidence-role-guide{grid-template-columns:1fr}
+  .active-role-reminder{grid-template-columns:1fr;gap:6px}
+}
+
+@media(max-width:620px){
+  .student-stage-navigation{height:60px;grid-template-columns:1fr 1fr}
+  .student-stage-navigation>p{display:none}
+  .student-stage-navigation button{padding:7px 12px;gap:0 7px}
+  .student-stage-navigation button>b{font-size:10px}
+  .student-stage-navigation button>small{font-size:7px}
+  .student-stage-navigation button>span{font-size:17px}
+  .forensics-app.has-stage-navigation{padding-top:130px}
+  .has-stage-navigation .scene{min-height:calc(100vh - 130px)}
+  .evidence-role-guide{gap:8px;margin:18px 0 24px}
+  .evidence-role-guide article{padding:16px}
+  .evidence-role-guide h2{font-size:13px}
+  .evidence-role-guide p{font-size:9px}
+  .web-extraction-notice{grid-template-columns:1fr;gap:6px;padding:13px}
+}
+
