@@ -377,6 +377,35 @@ function SystemHud({
   );
 }
 
+function StudentStageNavigation({
+  stage,
+  onPrevious,
+  onFirst,
+}: {
+  stage: StageId;
+  onPrevious: () => void;
+  onFirst: () => void;
+}) {
+  const currentIndex = STAGES.findIndex((item) => item.id === stage);
+  const previous = STAGES[currentIndex - 1];
+
+  return (
+    <nav className="student-stage-navigation" aria-label="수사 단계 이동">
+      <button type="button" onClick={onPrevious} disabled={!previous}>
+        <span aria-hidden="true">←</span>
+        <b>이전 단계</b>
+        <small>{previous?.label ?? "이전 단계 없음"}</small>
+      </button>
+      <p>확보한 증거와 작성 내용은 그대로 유지됩니다.</p>
+      <button type="button" onClick={onFirst}>
+        <b>첫 화면</b>
+        <small>CASE 017 시작 화면</small>
+        <span aria-hidden="true">⌂</span>
+      </button>
+    </nav>
+  );
+}
+
 function MissionHeading({
   eyebrow,
   title,
@@ -391,6 +420,37 @@ function MissionHeading({
       <span>{eyebrow}</span>
       <h1>{title}</h1>
       {description && <p>{description}</p>}
+    </div>
+  );
+}
+
+function EvidenceRoleGuide() {
+  return (
+    <div className="evidence-role-guide" aria-label="공폰, 웹앱, microSD 역할 구분">
+      <article className="physical-device-role">
+        <span>01 · 실제 공폰</span>
+        <h2>갤러리·내 파일을 조사</h2>
+        <p>
+          PIN 1017로 열고 사진, Documents, Download, DCIM과 microSD 존재 여부를
+          확인합니다. 메시지 앱과 통화 앱은 열지 않습니다.
+        </p>
+      </article>
+      <article className="web-system-role">
+        <span>02 · 웹 포렌식 시스템</span>
+        <h2>추출된 메시지·통화를 분석</h2>
+        <p>
+          실제 수사의 모바일 추출 결과를 모의한 CASE 017 기록입니다. 공폰에 가짜
+          메시지 앱을 설치하거나 학생이 대화를 만드는 활동이 아닙니다.
+        </p>
+      </article>
+      <article className="sd-media-role">
+        <span>03 · 실제 microSD</span>
+        <h2>삭제 사진을 직접 복구</h2>
+        <p>
+          교사 안내에 따라 공폰에서 분리한 뒤 카드리더기로 노트북에 연결하여
+          IMG_2048.jpg를 복구합니다.
+        </p>
+      </article>
     </div>
   );
 }
@@ -830,6 +890,15 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  function goPrevious() {
+    if (currentIndex <= 0) return;
+    go(STAGES[currentIndex - 1].id);
+  }
+
+  function goFirst() {
+    go("access");
+  }
+
   function submitPin() {
     if (pin === "1017") {
       setPinError("");
@@ -987,10 +1056,17 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
   );
 
   return (
-    <main className={classNames("forensics-app", teacherPreview && "teacher-preview-active")}>
+    <main className={classNames("forensics-app", teacherPreview && "teacher-preview-active", !teacherPreview && "has-stage-navigation")}>
       {teacherPreview && <TeacherPreviewBar step={previewStep} onStep={openPreviewStep} onShortcut={applyPreviewShortcut} />}
       <div className="ambient-grid" />
       <SystemHud stage={stage} evidenceCount={evidenceIds.length} groupId={groupId} />
+      {!teacherPreview && (
+        <StudentStageNavigation
+          stage={stage}
+          onPrevious={goPrevious}
+          onFirst={goFirst}
+        />
+      )}
       {teacherHint && (
         <aside className="teacher-hint-toast" aria-live="polite">
           <div>
@@ -1208,9 +1284,10 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                 저장매체와 파일 구조를 조사하여 사건과 관련된 자료를 확보하십시오.
               </p>
               <div className="search-rule">
-                <b>웹앱이 실제 증거물 조사를 대신하지 않습니다.</b>
-                <span>공폰의 기본 갤러리와 기본 파일 앱을 직접 사용하십시오.</span>
+                <b>공폰에서는 메시지나 통화기록을 찾지 않습니다.</b>
+                <span>기본 갤러리, 내 파일, microSD 존재 여부만 실제로 조사하십시오.</span>
               </div>
+              <EvidenceRoleGuide />
               <div className="timer-preview">
                 <span>제한시간</span>
                 <strong>12:00</strong>
@@ -1225,6 +1302,11 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                 <span>현장 조사 진행 중</span>
                 <h1>실제 공폰의 갤러리, 파일 앱, 저장매체를 조사하십시오.</h1>
                 <p>발견한 파일은 임의로 수정하거나 삭제하지 말고 이름·위치·존재 여부만 기록하십시오.</p>
+              </div>
+              <div className="active-role-reminder">
+                <span>지금 사용하는 것 · 실제 공폰</span>
+                <strong>갤러리·내 파일·microSD만 확인</strong>
+                <p>메시지와 통화기록은 공폰에서 보지 않습니다. 다음 웹 분석 단계에서 확인합니다.</p>
               </div>
               <div className={classNames("countdown", searchTime < 120 && "warning")}>
                 <span>TIME REMAINING</span>
@@ -1264,14 +1346,18 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                 ))}
               </div>
               <div className="physical-web-boundary">
-                <b>실물 조사 결과</b>
-                <p>현재 공폰에서 결정적 사진의 원본은 확인되지 않습니다. 이제 웹 포렌식 시스템의 추출 데이터로 삭제 흔적과 통신 기록을 확인하십시오.</p>
+                <b>공폰 조사 완료</b>
+                <p>
+                  공폰에서는 갤러리·내 파일·microSD만 확인했습니다. 메시지와 통화기록은
+                  공폰에서 찾거나 조작하지 않습니다. 다음 화면에서 웹에 미리 준비된
+                  포렌식 추출 결과를 분석합니다.
+                </p>
               </div>
               <PrimaryButton
                 onClick={() => go("dashboard")}
                 disabled={!Object.values(phoneFindings).every(Boolean)}
               >
-                웹 추출 데이터와 대조
+                웹에 준비된 추출 데이터 분석
               </PrimaryButton>
             </div>
           )}
@@ -1282,9 +1368,10 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
         <section className="scene dashboard-scene">
           <MissionHeading
             eyebrow="MOBILE EXTRACTION · FORENSIC ANALYSIS"
-            title="공폰에서 추출된 기록을 분석하십시오."
-            description="이 화면은 가짜 채팅 앱이 아니라 모바일 데이터 추출 결과입니다. 파일시스템, 메시지와 통화기록의 시간을 다른 증거와 비교하십시오."
+            title="웹에 제공된 모바일 추출 결과를 분석하십시오."
+            description="공폰의 메시지 앱을 여는 단계가 아닙니다. 실제 수사에서 추출 도구가 만드는 분석 결과를 모의한 CASE 017 데이터가 이 웹앱에 미리 제공됩니다."
           />
+          <EvidenceRoleGuide />
           <div className="analysis-console">
             <aside className="console-index">
               <span>ACQUIRED SOURCE</span>
@@ -1323,12 +1410,19 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
               </div>
               <div className="correlated-logs">
                 <div className="log-title">
-                  <span>추출 데이터 · 통신 기록</span>
+                  <span>웹 포렌식 보고서 · 통신 기록</span>
                   <b>18:27~18:45</b>
+                </div>
+                <div className="web-extraction-notice">
+                  <strong>공폰 화면이 아닙니다.</strong>
+                  <p>
+                    공폰에 이 메시지·통화 내역을 넣지 않습니다. 학생은 웹에 제공된 추출
+                    보고서에서 시간과 상대방만 읽고 CCTV·사진과 교차검증합니다.
+                  </p>
                 </div>
                 <div className={classNames("extraction-record-groups", logsRegistered && "revealed")}>
                   <section className="extraction-record-set">
-                    <header><span>MOBILE EXTRACTION</span><b>MESSAGE RECORD</b><small>메시지 기록</small></header>
+                    <header><span>WEB FORENSIC REPORT</span><b>MESSAGE RECORD</b><small>공폰 화면 아님</small></header>
                     {[
                       ["18:27", "C", "행사실 쪽에 사람 있어?"],
                       ["18:31", "B", "나 지금 체육관이야."],
@@ -1341,7 +1435,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                     ))}
                   </section>
                   <section className="extraction-record-set">
-                    <header><span>MOBILE EXTRACTION</span><b>CALL RECORD</b><small>통화 기록</small></header>
+                    <header><span>WEB FORENSIC REPORT</span><b>CALL RECORD</b><small>공폰 화면 아님</small></header>
                     {[
                       ["18:29", "B → 친구", "2분 14초"],
                       ["18:41", "C → 목격자", "43초"],
@@ -1360,7 +1454,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                       addEvidence("deleted-trace", "message", "call");
                     }}
                   >
-                    모바일 추출 기록 판독
+                    웹 추출 보고서 열기
                   </button>
                 )}
               </div>
