@@ -451,7 +451,7 @@ function EvidenceRoleGuide({ groupId }: { groupId: string }) {
         <h2>삭제 사진을 직접 복구</h2>
         <p>
           교사 안내에 따라 공폰에서 분리한 뒤 카드리더기로 노트북에 연결하여
-          IMG_2048.jpg를 복구합니다.
+          복구 도구로 삭제된 사진의 파일명과 내용을 직접 확인합니다.
         </p>
       </article>
     </div>
@@ -815,9 +815,9 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
     setRecoveryCodeVerified(["deleted-data", "micro-sd"].includes(preview.variant));
     setCrossChecked(["metadata", "frame", "timeline", "board", "report", "reconstruction", "career"].includes(preview.variant));
     setCctvRegistered(["frame", "timeline", "board", "report", "reconstruction", "career"].includes(preview.variant));
-    setTimelineItems(["timeline", "board", "report", "reconstruction", "career"].includes(preview.variant) ? CORRECT_TIMELINE : [CORRECT_TIMELINE[2], CORRECT_TIMELINE[0], CORRECT_TIMELINE[4], CORRECT_TIMELINE[1], CORRECT_TIMELINE[5], CORRECT_TIMELINE[3]]);
-    setTimelineVerified(["timeline", "board", "report", "reconstruction", "career"].includes(preview.variant));
-    setTimelineFeedback(preview.variant === "timeline" ? "미리보기용 정답 순서가 자동 적용되었습니다." : "");
+    setTimelineItems(["board", "report", "reconstruction", "career"].includes(preview.variant) ? CORRECT_TIMELINE : [CORRECT_TIMELINE[2], CORRECT_TIMELINE[0], CORRECT_TIMELINE[4], CORRECT_TIMELINE[1], CORRECT_TIMELINE[5], CORRECT_TIMELINE[3]]);
+    setTimelineVerified(["board", "report", "reconstruction", "career"].includes(preview.variant));
+    setTimelineFeedback("");
     setConnections(["board", "report", "reconstruction", "career"].includes(preview.variant) ? [["recovered-photo", "metadata"], ["metadata", "cctv"], ["message", "suspect-C"]] : []);
     setBoardReady(["board", "report", "reconstruction", "career"].includes(preview.variant));
     setEvidenceIds(
@@ -924,7 +924,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
 
   function submitTraceCode() {
     if (traceCode.trim().toUpperCase() !== groupAccess.recoveryCode) {
-      setTraceError("복구 결과의 증거 코드 문자·하이픈·숫자를 다시 확인하십시오.");
+      setTraceError(`${groupId} 복구 대조 후 표시된 등록용 코드를 그대로 입력하십시오.`);
       return;
     }
     setTraceError("");
@@ -959,10 +959,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
       setTimelineFeedback("시간 흐름과 증거 발생 순서가 일치합니다. 타임라인이 봉인되었습니다.");
       return;
     }
-    const item = timelineItems[mismatch];
-    setTimelineFeedback(
-      `${item.source}의 시간이 앞뒤 기록과 일치하지 않습니다. 원자료의 초 단위를 다시 비교하십시오.`,
-    );
+    setTimelineFeedback("배치 중 일부가 실제 사건 시간과 다릅니다. 이전 단계의 원자료를 다시 확인하십시오.");
   }
 
   function onTimelineDrop(targetId: string) {
@@ -1150,7 +1147,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
               </div>
               <div className="missing-photo">
                 <div className="broken-image">
-                  <span>IMG_2048.jpg</span>
+                  <span>FILE NAME UNKNOWN</span>
                   <strong>FILE NOT FOUND</strong>
                   <small>ERROR 0x0017 · SOURCE REMOVED</small>
                 </div>
@@ -1387,9 +1384,9 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
       {stage === "dashboard" && (
         <section className="scene dashboard-scene">
           <MissionHeading
-            eyebrow="MOBILE EXTRACTION · FORENSIC ANALYSIS"
-            title="웹에 제공된 모바일 추출 결과를 분석하십시오."
-            description="공폰의 메시지 앱을 여는 단계가 아닙니다. 실제 수사에서 추출 도구가 만드는 분석 결과를 모의한 CASE 017 데이터가 이 웹앱에 미리 제공됩니다."
+            eyebrow="MISSION 02 · 메시지와 통화 시간 확인"
+            title="기록의 시간을 다른 증거와 비교하세요."
+            description="공폰의 갤러리·파일 조사는 끝났습니다. 이제 아래 웹 자료에서 메시지와 통화 시간을 확인합니다."
           />
           <EvidenceRoleGuide groupId={groupId} />
           <div className="analysis-console">
@@ -1404,15 +1401,15 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
             </aside>
             <div className="console-main">
               <div className="deleted-file-row">
-                <span>{groupAccess.recoveryCode}</span>
+                <span>삭제 흔적 #01</span>
                 <div>
-                  <b>IMG_2048.jpg</b>
+                  <b>파일명 정보 손상</b>
                   <small>/storage/32E1-17AF/DCIM/Camera</small>
                 </div>
-                <strong>DELETED</strong>
+                <strong>복구 필요</strong>
               </div>
               <div className="binary-strip" aria-hidden="true">
-                49 4D 47 5F 32 30 34 38 · 00 FF D8 · 3A 17 8C 0F · UNALLOCATED
+                ?? ?? ?? ?? · JPEG HEADER DETECTED · 3A 17 8C 0F · UNALLOCATED
               </div>
               <div className="analysis-findings">
                 <div>
@@ -1430,19 +1427,27 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
               </div>
               <div className="correlated-logs">
                 <div className="log-title">
-                  <span>웹 포렌식 보고서 · 통신 기록</span>
+                  <span>웹에서 확인하는 메시지·통화 기록</span>
                   <b>18:27~18:45</b>
                 </div>
                 <div className="web-extraction-notice">
-                  <strong>공폰 화면이 아닙니다.</strong>
-                  <p>
-                    공폰에 이 메시지·통화 내역을 넣지 않습니다. 학생은 웹에 제공된 추출
-                    보고서에서 시간과 상대방만 읽고 CCTV·사진과 교차검증합니다.
-                  </p>
+                  <div className="web-extraction-copy">
+                    <span>이 화면에서 할 일</span>
+                    <strong>기록의 시간을 다른 증거와 비교하세요.</strong>
+                    <p>
+                      공폰에서는 갤러리와 파일만 조사했습니다. 메시지와 통화 기록은
+                      아래 표에서 확인합니다.
+                    </p>
+                  </div>
+                  <ol className="web-extraction-steps">
+                    <li><b>1</b><span>메시지를 보낸 시각 확인</span></li>
+                    <li><b>2</b><span>전화를 건 시각 확인</span></li>
+                    <li><b>3</b><span>사진·CCTV 시각과 비교</span></li>
+                  </ol>
                 </div>
                 <div className={classNames("extraction-record-groups", logsRegistered && "revealed")}>
                   <section className="extraction-record-set">
-                    <header><span>WEB FORENSIC REPORT</span><b>MESSAGE RECORD</b><small>공폰 화면 아님</small></header>
+                    <header><span>수사 자료</span><b>메시지 기록</b><small>확인할 것 · 보낸 시각</small></header>
                     {[
                       ["18:27", "C", "행사실 쪽에 사람 있어?"],
                       ["18:31", "B", "나 지금 체육관이야."],
@@ -1455,7 +1460,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                     ))}
                   </section>
                   <section className="extraction-record-set">
-                    <header><span>WEB FORENSIC REPORT</span><b>CALL RECORD</b><small>공폰 화면 아님</small></header>
+                    <header><span>수사 자료</span><b>통화 기록</b><small>확인할 것 · 통화 시각</small></header>
                     {[
                       ["18:29", "B → 친구", "2분 14초"],
                       ["18:41", "C → 목격자", "43초"],
@@ -1474,7 +1479,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                       addEvidence("deleted-trace", "message", "call");
                     }}
                   >
-                    웹 추출 보고서 열기
+                    메시지·통화 기록 확인하기
                   </button>
                 )}
               </div>
@@ -1515,7 +1520,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
               <div className="recovery-header">
                 <div>
                   <span>SOURCE</span>
-                  <b>microSD · 32E1-17AF</b>
+                  <b>{groupId} · microSD · 32E1-17AF</b>
                 </div>
                 <strong>READ ONLY</strong>
               </div>
@@ -1525,9 +1530,9 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                 <div><span>IMG_2041.jpg</span><i style={{ width: "100%" }} /><b>현재 파일 · 정상 열림</b></div>
                 <div><span>IMG_2042.jpg</span><i style={{ width: "100%" }} /><b>현재 파일 · 정상 열림</b></div>
                 <div className={recoveryProgress > 0 ? "active" : ""}>
-                  <span>IMG_2048.jpg</span>
+                  <span>{recoveryProgress > 0 ? "IMG_2048.jpg" : "파일명 미확인"}</span>
                   <i style={{ width: `${recoveryProgress}%` }} />
-                  <b>{recoveryProgress > 0 ? `${recoveryProgress}%` : "분석 대기"}</b>
+                  <b>{recoveryProgress > 0 ? `${recoveryProgress}%` : "삭제 흔적 · 대조 필요"}</b>
                 </div>
               </div>
               <div className="recovery-entry">
@@ -1537,7 +1542,9 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                     id="recovery-file"
                     value={recoveryName}
                     onChange={(event) => setRecoveryName(event.target.value)}
-                    placeholder="IMG_0000.jpg"
+                    placeholder="복구 도구에서 확인한 파일명 입력"
+                    autoComplete="off"
+                    spellCheck={false}
                   />
                   <button type="button" onClick={startRecovery}>복구 결과 대조</button>
                 </div>
@@ -1561,6 +1568,9 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                       복구된 이미지에 검은 후드티를 입은 인물이 보입니다. 그러나 이 사진만으로
                       인물을 확정할 수 없습니다.
                     </p>
+                    <em className="recovered-evidence-code">
+                      대조 완료 · 등록용 증거 코드 {groupAccess.recoveryCode}
+                    </em>
                   </div>
                 </div>
               )}
@@ -1705,8 +1715,12 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
           <MissionHeading
             eyebrow="MISSION 04 · TEMPORAL RECONSTRUCTION"
             title="증거를 실제 발생 시간순으로 정렬하십시오."
-            description="카드를 끌어 놓거나 이동 버튼을 사용하십시오. 기록의 확인 시각이 아니라 사건 발생 시각이 기준입니다."
+            description="카드에는 정답 시간이 표시되지 않습니다. 앞 단계에서 확인한 원자료를 근거로 카드를 배치하십시오."
           />
+          <div className="timeline-evidence-reminder">
+            <b>시간은 정답 확인 후 공개됩니다.</b>
+            <p>기억나지 않으면 상단의 ‘이전 단계’ 버튼으로 돌아가 사진·CCTV·메시지·통화 시각을 다시 확인하세요.</p>
+          </div>
           <div className="timeline-workspace">
             <div className="timeline-axis" />
             {timelineItems.map((item, index) => (
@@ -1715,6 +1729,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                 className={classNames(
                   "timeline-record",
                   draggedTimelineId === item.id && "dragging",
+                  timelineVerified && "verified",
                 )}
                 draggable={!timelineVerified}
                 onDragStart={() => setDraggedTimelineId(item.id)}
@@ -1722,7 +1737,11 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                 onDrop={() => onTimelineDrop(item.id)}
               >
                 <div className="timeline-order">{(index + 1).toString().padStart(2, "0")}</div>
-                <time>{item.time}</time>
+                {timelineVerified ? (
+                  <time>{item.time}</time>
+                ) : (
+                  <span className="timeline-time-hidden">시간 비공개</span>
+                )}
                 <div>
                   <h2>{item.title}</h2>
                   <span>{item.source}</span>
