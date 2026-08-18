@@ -21,6 +21,7 @@ import {
   type StageId,
   type TimelineItem,
 } from "./data";
+import { getGroupAccess } from "./groupAccess";
 import { PREVIEW_STEPS } from "./teacher/teacherData";
 
 const STAGE_STATUS: Partial<Record<StageId, string>> = {
@@ -35,6 +36,8 @@ const STAGE_STATUS: Partial<Record<StageId, string>> = {
   reconstruction: "사건 재구성 확인",
   career: "수사 완료",
 };
+
+const PREVIEW_GROUP_ACCESS = getGroupAccess("E-01");
 
 function classNames(...names: Array<string | false | null | undefined>) {
   return names.filter(Boolean).join(" ");
@@ -424,15 +427,15 @@ function MissionHeading({
   );
 }
 
-function EvidenceRoleGuide() {
+function EvidenceRoleGuide({ groupId }: { groupId: string }) {
   return (
     <div className="evidence-role-guide" aria-label="공폰, 웹앱, microSD 역할 구분">
       <article className="physical-device-role">
         <span>01 · 실제 공폰</span>
         <h2>갤러리·내 파일을 조사</h2>
         <p>
-          PIN 1017로 열고 사진, Documents, Download, DCIM과 microSD 존재 여부를
-          확인합니다. 메시지 앱과 통화 앱은 열지 않습니다.
+          {groupId} 공폰은 전용 PIN으로 열고 사진, Documents, Download, DCIM과
+          microSD 존재 여부를 확인합니다. 메시지 앱과 통화 앱은 열지 않습니다.
         </p>
       </article>
       <article className="web-system-role">
@@ -618,6 +621,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
   const [stage, setStage] = useState<StageId>("access");
   const [evidenceIds, setEvidenceIds] = useState<EvidenceId[]>([]);
   const [groupId, setGroupId] = useState("E-01");
+  const [groupLocked, setGroupLocked] = useState(false);
   const [pin, setPin] = useState("");
   const [pinError, setPinError] = useState("");
   const [searchStarted, setSearchStarted] = useState(false);
@@ -669,6 +673,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
   } | null>(null);
 
   const currentIndex = STAGES.findIndex((item) => item.id === stage);
+  const groupAccess = getGroupAccess(groupId);
   const reportIsValid =
     suspect === "C" &&
     reportEvidence.length >= 3 &&
@@ -690,17 +695,25 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
       const savedEvidence = window.localStorage.getItem("df-evidence");
       const savedGroup = window.localStorage.getItem("df-group-id");
       const requestedGroup = new URLSearchParams(window.location.search).get("group");
-      if (savedStage && STAGES.some((item) => item.id === savedStage)) setStage(savedStage);
-      if (savedEvidence) {
+      const groupNumber = requestedGroup ? Number(requestedGroup) : 0;
+      const requestedGroupId = groupNumber >= 1 && groupNumber <= 5
+        ? `E-0${groupNumber}`
+        : null;
+      const canRestoreProgress = !requestedGroupId || requestedGroupId === savedGroup;
+
+      if (canRestoreProgress && savedStage && STAGES.some((item) => item.id === savedStage)) {
+        setStage(savedStage);
+      }
+      if (canRestoreProgress && savedEvidence) {
         try {
           setEvidenceIds(JSON.parse(savedEvidence));
         } catch {
           window.localStorage.removeItem("df-evidence");
         }
       }
-      const groupNumber = requestedGroup ? Number(requestedGroup) : 0;
-      if (groupNumber >= 1 && groupNumber <= 5) {
-        setGroupId(`E-0${groupNumber}`);
+      if (requestedGroupId) {
+        setGroupId(requestedGroupId);
+        setGroupLocked(true);
       } else if (savedGroup) {
         setGroupId(savedGroup);
       }
@@ -788,12 +801,12 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
     const allEvidence = Object.keys(EVIDENCE) as EvidenceId[];
     setStage(preview.stage);
     setGroupId("E-01");
-    setPin(preview.stage === "pin" ? "1017" : "");
+    setPin(preview.stage === "pin" ? PREVIEW_GROUP_ACCESS.phonePin : "");
     setPinError("");
     setSearchStarted(preview.stage === "phone-search");
     setSearchTime(720);
     setPhoneFindings(preview.stage === "phone-search" ? { gallery: true, files: true, storage: true } : { gallery: false, files: false, storage: false });
-    setTraceCode(["trace", "deleted-data"].includes(preview.variant) ? "DF-2048" : "");
+    setTraceCode(["trace", "deleted-data"].includes(preview.variant) ? PREVIEW_GROUP_ACCESS.recoveryCode : "");
     setTraceError("");
     setLogsRegistered(["messages", "calls"].includes(preview.variant));
     setRecoveryName(preview.stage === "recovery" ? "IMG_2048.JPG" : "");
@@ -850,9 +863,9 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
 
   function applyPreviewShortcut() {
     const preview = PREVIEW_STEPS[previewStep];
-    if (preview.variant === "pin") setPin("1017");
+    if (preview.variant === "pin") setPin(PREVIEW_GROUP_ACCESS.phonePin);
     if (["trace", "deleted-data"].includes(preview.variant)) {
-      setTraceCode("DF-2048");
+      setTraceCode(PREVIEW_GROUP_ACCESS.recoveryCode);
       setRecoveryCodeVerified(true);
       addEvidence("deleted-trace", "recovered-photo");
     }
@@ -900,17 +913,17 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
   }
 
   function submitPin() {
-    if (pin === "1017") {
+    if (pin === groupAccess.phonePin) {
       setPinError("");
       go("phone-search");
     } else {
-      setPinError("단서의 날짜를 네 자리 숫자로 다시 해석하십시오.");
+      setPinError(`${groupId} 전용 단서의 날짜를 네 자리 숫자로 다시 해석하십시오.`);
       setPin("");
     }
   }
 
   function submitTraceCode() {
-    if (traceCode.trim().toUpperCase() !== "DF-2048") {
+    if (traceCode.trim().toUpperCase() !== groupAccess.recoveryCode) {
       setTraceError("복구 결과의 증거 코드 문자·하이픈·숫자를 다시 확인하십시오.");
       return;
     }
@@ -1191,6 +1204,11 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
             </div>
             <div className="evidence-side-panel">
               <span>모둠별 증거물 번호</span>
+              <p className="group-selection-note">
+                {groupLocked
+                  ? `${groupAccess.group}모둠 전용 링크로 접속했습니다. 이 사건에서는 ${groupId}만 사용할 수 있습니다.`
+                  : "증거봉투에 적힌 모둠 번호를 선택하십시오. 선택에 따라 공폰 PIN과 증거 등록 코드가 달라집니다."}
+              </p>
               <div className="evidence-number-grid">
                 {[1, 2, 3, 4, 5].map((number) => {
                   const id = `E-0${number}`;
@@ -1199,9 +1217,11 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                       type="button"
                       key={id}
                       className={groupId === id ? "selected" : ""}
+                      disabled={groupLocked}
                       onClick={() => setGroupId(id)}
                     >
-                      {id}
+                      <span>{number}모둠</span>
+                      <b>{id}</b>
                     </button>
                   );
                 })}
@@ -1226,16 +1246,16 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
       {stage === "pin" && (
         <section className="scene pin-scene">
           <div className="witness-statement">
-            <span>WITNESS STATEMENT · 017-W3</span>
+            <span>WITNESS STATEMENT · 017-W3 · {groupId}</span>
             <blockquote>
               <p>“휴대폰 비밀번호요?”</p>
               <p>“제가 절대 잊어버리지 않는 숫자로 해놨어요.”</p>
-              <strong>“축제 개막일이에요.”</strong>
+              <strong>“{groupAccess.cluePrompt}”</strong>
             </blockquote>
             <div className="festival-record">
-              <span>교내 행사 기록</span>
-              <b>학교 축제</b>
-              <strong>10월 17일 개막</strong>
+              <span>{groupId} 전용 교내 행사 기록</span>
+              <b>{groupAccess.clueLabel}</b>
+              <strong>{groupAccess.clueDate}</strong>
             </div>
             <p className="legal-note">
               이 단계는 교사가 설정한 수업용 PIN 퍼즐입니다. 실제 보안 우회 방법을 다루지 않습니다.
@@ -1287,7 +1307,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                 <b>공폰에서는 메시지나 통화기록을 찾지 않습니다.</b>
                 <span>기본 갤러리, 내 파일, microSD 존재 여부만 실제로 조사하십시오.</span>
               </div>
-              <EvidenceRoleGuide />
+              <EvidenceRoleGuide groupId={groupId} />
               <div className="timer-preview">
                 <span>제한시간</span>
                 <strong>12:00</strong>
@@ -1371,7 +1391,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
             title="웹에 제공된 모바일 추출 결과를 분석하십시오."
             description="공폰의 메시지 앱을 여는 단계가 아닙니다. 실제 수사에서 추출 도구가 만드는 분석 결과를 모의한 CASE 017 데이터가 이 웹앱에 미리 제공됩니다."
           />
-          <EvidenceRoleGuide />
+          <EvidenceRoleGuide groupId={groupId} />
           <div className="analysis-console">
             <aside className="console-index">
               <span>ACQUIRED SOURCE</span>
@@ -1384,7 +1404,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
             </aside>
             <div className="console-main">
               <div className="deleted-file-row">
-                <span>DF-2048</span>
+                <span>{groupAccess.recoveryCode}</span>
                 <div>
                   <b>IMG_2048.jpg</b>
                   <small>/storage/32E1-17AF/DCIM/Camera</small>
@@ -1561,7 +1581,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                     </button>
                   </div>
                   {traceError && <p className="error-message">{traceError}</p>}
-                  {recoveryCodeVerified && <p className="success-message">DF-2048이 E-02·E-03 증거로 등록되었습니다.</p>}
+                  {recoveryCodeVerified && <p className="success-message">증거 코드 {groupAccess.recoveryCode}가 E-02·E-03에 등록되었습니다.</p>}
                 </div>
               )}
             </div>

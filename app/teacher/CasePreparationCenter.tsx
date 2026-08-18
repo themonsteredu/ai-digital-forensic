@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState, type ReactNode } from "react";
+import { GROUP_ACCESS } from "../groupAccess";
 
 type PrepStepId =
   | "purchase"
@@ -31,7 +32,7 @@ const SETUP_ITEMS = [
   ["setup-factory", "STEP 1", "공장초기화된 Android 공폰 준비", "기존 사진, 연락처, 앱 데이터가 없는 수업 전용 기기를 사용합니다."],
   ["setup-account", "STEP 2", "개인 계정 제거 확인", "Google·Samsung 계정이 남아 있지 않은지 확인합니다."],
   ["setup-wifi", "STEP 3", "Wi-Fi 연결 확인", "파일을 내려받을 때만 연결하고 수업 직전에는 알림을 차단합니다."],
-  ["setup-pin", "STEP 4", "잠금 PIN 설정", "PIN은 1017로 설정합니다."],
+  ["setup-pin", "STEP 4", "조별 잠금 PIN 설정", "아래 조별 설정표에 따라 공폰 1~5의 PIN을 서로 다르게 설정합니다."],
   ["setup-copy-images", "STEP 5", "사건 사진을 공폰에 복사", "사진팩을 DCIM/Camera 폴더에 복사하고 갤러리에서 확인합니다."],
   ["setup-copy-files", "STEP 6", "사건 파일을 공폰에 복사", "Documents와 Download 폴더 구조를 유지합니다."],
   ["setup-sd", "STEP 7", "microSD 삽입", "공폰 1대당 16GB 또는 32GB microSD 1개를 삽입합니다."],
@@ -76,7 +77,7 @@ const PREFLIGHT_ITEMS = [
   ["ready-phone-3", "공폰 3 전원"],
   ["ready-phone-4", "공폰 4 전원"],
   ["ready-phone-5", "공폰 5 전원"],
-  ["ready-pin", "PIN 1017 설정"],
+  ["ready-pin", "공폰 1~5 조별 PIN 설정"],
   ["ready-images", "사건 사진 복사"],
   ["ready-files", "사건 파일 복사"],
   ["ready-sd", "microSD 삽입"],
@@ -284,7 +285,27 @@ export default function CasePreparationCenter() {
                   </article>
                 ))}
               </div>
-              <div className="pin-display-card"><span>CASE 017 공통 PIN</span><strong>1017</strong><p>교사용 사건 퍼즐의 정답이며 실제 보안 우회를 다루지 않습니다.</p></div>
+              <div className="group-access-guide">
+                <header>
+                  <div><span>GROUP-SPECIFIC ACCESS</span><h3>조별 공폰·증거 코드 설정표</h3></div>
+                  <p>각 공폰의 증거봉투 번호와 아래 값을 맞춰 설정하십시오. 학생에게는 해당 모둠 링크만 제공합니다.</p>
+                </header>
+                <div className="group-access-table" role="table" aria-label="CASE 017 조별 공폰 PIN과 복구 증거 코드">
+                  <div className="group-access-head" role="row">
+                    <span>모둠·증거물</span><span>공폰 PIN</span><span>PIN 단서</span><span>복구 등록 코드</span><span>학생 시작</span>
+                  </div>
+                  {GROUP_ACCESS.map((access) => (
+                    <div role="row" key={access.groupId}>
+                      <b role="cell">{access.group}모둠 · {access.groupId}</b>
+                      <strong role="cell">{access.phonePin}</strong>
+                      <span role="cell">{access.clueLabel}<small>{access.clueDate}</small></span>
+                      <code role="cell">{access.recoveryCode}</code>
+                      <a role="cell" href={access.studentPath} target="_blank" rel="noreferrer">전용 링크 열기</a>
+                    </div>
+                  ))}
+                </div>
+                <div className="prep-callout warning"><b>조별 링크 사용</b><p>전용 링크로 접속하면 학생 화면의 모둠 번호가 고정됩니다. 다른 모둠의 PIN이나 증거 등록 코드를 입력해도 통과하지 않습니다.</p></div>
+              </div>
             </div>
           )}
 
