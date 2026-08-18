@@ -360,7 +360,7 @@ function SystemHud({
         <span className="status-dot" />
         <div>
           <b>CASE 017</b>
-          <small>사라진 목격 사진</small>
+          <small>사라진 모금함과 삭제된 사진</small>
         </div>
       </div>
       <div className="hud-progress" aria-label={`수사 진행률 ${progress}%`}>
@@ -458,6 +458,32 @@ function EvidenceRoleGuide({ groupId }: { groupId: string }) {
   );
 }
 
+function StoryCheckpoint({
+  facts,
+  nextQuestion,
+}: {
+  facts: string[];
+  nextQuestion: string;
+}) {
+  return (
+    <aside className="story-checkpoint" aria-label="지금까지 밝혀진 사건 내용">
+      <div className="story-checkpoint-title">
+        <span>수사 이야기 정리</span>
+        <h2>지금까지 알아낸 사실</h2>
+      </div>
+      <ol>
+        {facts.map((fact, index) => (
+          <li key={fact}><b>{index + 1}</b><span>{fact}</span></li>
+        ))}
+      </ol>
+      <div className="story-next-question">
+        <span>다음에 확인할 것</span>
+        <b>{nextQuestion}</b>
+      </div>
+    </aside>
+  );
+}
+
 function PrimaryButton({
   children,
   onClick,
@@ -538,8 +564,11 @@ function AccessScreen({
           <div className="case-alert">
             <div className="case-alert-title">
               <span>CASE 017</span>
-              <strong>사라진 목격 사진</strong>
+              <strong>사라진 모금함과 삭제된 사진</strong>
             </div>
+            <p className="case-alert-summary">
+              축제 수익금 모금함이 사라졌고, 사건 직전 복도에서 찍힌 사진도 삭제되었습니다.
+            </p>
             <div className="alert-line">
               <span>PRIORITY 01</span>
               <b>긴급 사건이 접수되었습니다.</b>
@@ -1093,9 +1122,12 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
             <span className="priority-label">URGENT INCIDENT BRIEFING</span>
             <h1>
               CASE 017
-              <small>사라진 목격 사진</small>
+              <small>사라진 모금함과 삭제된 사진</small>
             </h1>
-            <p>학교 축제가 끝난 저녁, 행사실에서 축제 수익금 모금함이 사라졌다.</p>
+            <p>
+              학교 축제가 끝난 저녁, 수익금 모금함이 사라졌습니다. 사건 직전 복도에서
+              찍힌 사진도 삭제됐습니다. 사진을 복구하고 여러 기록을 맞춰 관련 인물을 찾으세요.
+            </p>
             <div className="briefing-facts">
               <div>
                 <span>발생 장소</span>
@@ -1106,8 +1138,8 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                 <b>19:02</b>
               </div>
               <div>
-                <span>확보 영상</span>
-                <b>CAM 03</b>
+                <span>수사 목표</span>
+                <b>사건 관련 인물 확인</b>
               </div>
             </div>
           </div>
@@ -1136,14 +1168,23 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                 </div>
                 <strong>017</strong>
               </div>
-              <h1>사라진 목격 사진</h1>
+              <h1>사라진 모금함과 삭제된 사진</h1>
               <p className="case-summary">
-                오늘 오후 7시경 학교 축제 수익금이 보관되어 있던 행사실의 모금함이
-                사라졌다.
+                오후 7시경 학교 축제 수익금이 든 모금함이 행사실에서 사라졌습니다.
+                사건 직전, 한 학생이 행사실 복도에서 수상한 사람을 사진으로 남겼지만
+                그 사진은 현재 보이지 않습니다.
               </p>
               <div className="case-key-clue">
-                <span>중요 단서 01</span>
-                <p>사건 직전 한 학생이 행사실 근처에서 사진 한 장을 촬영했다.</p>
+                <span>이번 수사 목표</span>
+                <p>삭제된 사진을 복구하고 메시지·통화·CCTV 시간을 비교해 모금함 사건과 가장 관련 있는 인물을 찾습니다.</p>
+              </div>
+              <div className="case-story-questions">
+                <b>먼저 기억할 세 가지</b>
+                <ol>
+                  <li><span>1</span><p>사라진 것은 <strong>축제 수익금 모금함</strong>입니다.</p></li>
+                  <li><span>2</span><p>목격자는 범인을 확정한 것이 아니라 <strong>복도 사진</strong>을 찍었습니다.</p></li>
+                  <li><span>3</span><p>사진을 누가 삭제했는지는 아직 <strong>확인되지 않았습니다.</strong></p></li>
+                </ol>
               </div>
               <div className="missing-photo">
                 <div className="broken-image">
@@ -1155,6 +1196,18 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                   <span>삭제 확인</span>
                   <b>목격자의 스마트폰에서 해당 사진이 삭제된 사실이 확인되었습니다.</b>
                 </div>
+              </div>
+              <div className="case-suspect-roster">
+                <div>
+                  <span>관련 학생</span>
+                  <b>A~D가 누구인지 먼저 확인하세요.</b>
+                </div>
+                <ul>
+                  {SUSPECTS.map((item) => (
+                    <li key={item.id}><strong>{item.id}</strong><span>{item.name}</span><small>{item.role}</small></li>
+                  ))}
+                </ul>
+                <p><b>목격자</b>는 복도 사진을 찍은 별도 학생이며, A~D 중 한 명을 뜻하지 않습니다.</p>
               </div>
               <div className="paper-stamp">RESTRICTED</div>
             </div>
@@ -1449,12 +1502,12 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                   <section className="extraction-record-set">
                     <header><span>수사 자료</span><b>메시지 기록</b><small>확인할 것 · 보낸 시각</small></header>
                     {[
-                      ["18:27", "C", "행사실 쪽에 사람 있어?"],
-                      ["18:31", "B", "나 지금 체육관이야."],
-                      ["18:36", "C", "사진 찍었어?"],
+                      ["18:27", "C · 박도윤", "행사실 쪽에 사람 있어?"],
+                      ["18:31", "B · 김민수", "나 지금 체육관이야."],
+                      ["18:36", "C · 박도윤", "사진 찍었어?"],
                       ["18:38", "목격자", "응. 근데 이상한 사람이 있었어."],
-                      ["18:40:52", "C", "행사실 앞에 둔 것 확인했어."],
-                      ["18:41", "C", "그 사진 누구한테 보냈어?"],
+                      ["18:40:52", "C · 박도윤", "행사실 앞에 둔 것 확인했어."],
+                      ["18:41", "C · 박도윤", "그 사진 누구한테 보냈어?"],
                     ].map(([time, sender, message]) => (
                       <div className="extraction-record-row" key={`${time}-${sender}`}><time>{time}</time><b>{sender}</b><p>{message}</p></div>
                     ))}
@@ -1462,10 +1515,10 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
                   <section className="extraction-record-set">
                     <header><span>수사 자료</span><b>통화 기록</b><small>확인할 것 · 통화 시각</small></header>
                     {[
-                      ["18:29", "B → 친구", "2분 14초"],
-                      ["18:41", "C → 목격자", "43초"],
-                      ["18:44:12", "C → 목격자", "38초"],
-                      ["18:45", "C → 미확인 번호", "1분 02초"],
+                      ["18:29", "B · 김민수 → 친구", "2분 14초"],
+                      ["18:41", "C · 박도윤 → 목격자", "43초"],
+                      ["18:44:12", "C · 박도윤 → 목격자", "38초"],
+                      ["18:45", "C · 박도윤 → 미확인 번호", "1분 02초"],
                     ].map(([time, target, duration]) => (
                       <div className="extraction-record-row" key={`${time}-${target}`}><time>{time}</time><b>{target}</b><p>{duration}</p></div>
                     ))}
@@ -1485,6 +1538,16 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
               </div>
             </div>
           </div>
+          {logsRegistered && (
+            <StoryCheckpoint
+              facts={[
+                "공폰 갤러리에는 목격자가 사건 직전에 찍었다는 사진이 보이지 않았습니다.",
+                "C 박도윤은 행사실 위치와 목격자가 찍은 사진을 여러 번 물었습니다.",
+                "microSD에서는 삭제된 JPEG 사진의 흔적이 발견됐지만 내용은 아직 모릅니다.",
+              ]}
+              nextQuestion="삭제된 사진에는 무엇이 찍혀 있을까?"
+            />
+          )}
           <div className="mission-unlock">
             <span>MISSION 02 UNLOCKED</span>
             <h2>삭제된 데이터를 복구하십시오.</h2>
@@ -1596,6 +1659,16 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
               )}
             </div>
           </div>
+          {recoveryProgress >= 94 && recoveryCodeVerified && (
+            <StoryCheckpoint
+              facts={[
+                "microSD에서 삭제된 복도 사진을 복구했습니다.",
+                "사진에는 검은 후드티를 입은 사람이 보입니다.",
+                "검은 옷만으로는 A~D 중 누구인지 확정할 수 없습니다.",
+              ]}
+              nextQuestion="사진은 언제 어디서 찍혔고, 그 시각 각 인물은 어디에 있었을까?"
+            />
+          )}
           <div className="recovery-principle">
             <b>기억할 원칙</b>
             <p>삭제했다고 항상 복구되는 것도, 복구됐다고 곧바로 범죄 증거가 되는 것도 아닙니다.</p>
@@ -1621,7 +1694,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
               </div>
               <div className="photo-hypothesis">
                 <span>초기 가설</span>
-                <p>검은 후드티를 자주 입는 용의자 B가 사진 속 인물일 가능성이 있다.</p>
+                <p>검은 후드티를 자주 입는 용의자 B · 김민수가 사진 속 인물일 가능성이 있다.</p>
               </div>
             </div>
             <div className="metadata-panel">
@@ -1649,7 +1722,7 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
           <div className={classNames("cross-check", crossChecked && "complete")}>
             <div>
               <span>CROSS CHECK 01</span>
-              <h2>용의자 B의 위치 기록과 비교</h2>
+              <h2>용의자 B · 김민수의 위치 기록과 비교</h2>
             </div>
             {!crossChecked ? (
               <button
@@ -1664,11 +1737,21 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
             ) : (
               <div className="location-result">
                 <strong>가설 충돌</strong>
-                <p>용의자 B의 기기는 18:39~18:49 체육관 무대에 머물렀고 공연 영상에도 같은 시각 등장합니다.</p>
+                <p>용의자 B · 김민수의 기기는 18:39~18:49 체육관 무대에 머물렀고 공연 영상에도 같은 시각 등장합니다.</p>
                 <b>검은 후드만으로 B를 특정할 수 없습니다.</b>
               </div>
             )}
           </div>
+          {crossChecked && (
+            <StoryCheckpoint
+              facts={[
+                "복구 사진은 18시 42분 행사실 동쪽 복도에서 촬영됐습니다.",
+                "검은 후드티 때문에 B 김민수를 먼저 의심했습니다.",
+                "하지만 같은 시각 김민수는 체육관 공연 영상에 있어 초기 추측과 맞지 않습니다.",
+              ]}
+              nextQuestion="옷 색 말고 사진과 CCTV에서 함께 보이는 작은 특징은 무엇일까?"
+            />
+          )}
           <PrimaryButton onClick={() => go("cctv-analysis")} disabled={!crossChecked}>
             CCTV에서 다른 특징 찾기
           </PrimaryButton>
@@ -1700,10 +1783,20 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
               </div>
               <div className="suspect-shift">
                 <span>새로운 가설</span>
-                <p>이 두 가지 작은 특징은 용의자 C의 압수 목록과 일치합니다.</p>
+                <p>이 두 가지 작은 특징은 용의자 C · 박도윤의 압수 목록과 일치합니다.</p>
               </div>
             </aside>
           </div>
+          {cctvRegistered && (
+            <StoryCheckpoint
+              facts={[
+                "복구 사진과 CCTV 인물 모두 밝은 운동화와 반사형 가방끈이 보입니다.",
+                "두 특징은 C 박도윤의 소지품 기록과 일치합니다.",
+                "아직 한 장면만으로 결론 내리지 않고 모든 기록의 순서를 확인해야 합니다.",
+              ]}
+              nextQuestion="메시지·사진·삭제·통화·CCTV는 어떤 순서로 이어질까?"
+            />
+          )}
           <PrimaryButton onClick={() => go("timeline")} disabled={!cctvRegistered}>
             사건 시간 재구성
           </PrimaryButton>
@@ -1757,6 +1850,16 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
             <p className={classNames("timeline-feedback", timelineVerified && "success")}>
               {timelineFeedback}
             </p>
+          )}
+          {timelineVerified && (
+            <StoryCheckpoint
+              facts={[
+                "모금함 보관 뒤 박도윤이 행사실 위치를 메시지로 확인했습니다.",
+                "목격 사진 촬영 뒤 삭제 흔적과 목격자 통화가 이어졌습니다.",
+                "이후 사진과 같은 특징의 인물이 행사실 방향 CCTV에 나타났습니다.",
+              ]}
+              nextQuestion="서로 다른 증거 세 가지 이상을 연결하면 누구와 가장 잘 맞을까?"
+            />
           )}
           {!timelineVerified ? (
             <PrimaryButton onClick={verifyTimeline}>시간 일치 여부 분석</PrimaryButton>
@@ -2011,12 +2114,13 @@ export default function ForensicsExperience({ teacherPreview = false }: { teache
             reportIsValid ? (
               <div className="case-resolved">
                 <span>CASE RECONSTRUCTION COMPLETE</span>
-                <h2>실제 사건은 이렇게 일어났습니다.</h2>
+                <h2>증거가 가리키는 사건의 흐름입니다.</h2>
                 <p>
-                  박도윤은 행사실 위치를 메시지로 확인한 뒤 현장에 접근했고, 목격 사진 삭제에
-                  관여한 후 모금함을 행사실 밖으로 무단 반출했습니다. 사진의 작은 특징,
-                  메타데이터, CCTV, 메시지와 통화 기록이 같은 시간 흐름을 가리킵니다.
+                  박도윤은 메시지로 행사실 위치를 확인했고, 복구 사진과 CCTV에서 같은
+                  운동화와 가방끈 특징이 확인됐습니다. 목격자 통화와 현장 접근 기록도 같은
+                  시간 흐름으로 이어져 모금함 사건과 가장 관련성이 높은 인물로 판단됩니다.
                 </p>
+                <small className="case-limit-note">사진을 누가 삭제했는지는 현재 증거만으로 확인되지 않았습니다.</small>
                 <strong>결론의 핵심은 인상착의 하나가 아니라 서로 독립된 증거의 일치입니다.</strong>
                 <PrimaryButton onClick={() => go("career")}>수사 감정 결과 확인</PrimaryButton>
               </div>
