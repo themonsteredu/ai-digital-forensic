@@ -221,7 +221,7 @@ export function CaseManagement({ onReset }: { onReset: (scope: "case" | "prep" |
         <article><span>02</span><h3>수업 준비 상태 초기화</h3><p>준비센터의 단계 완료 및 체크리스트 기록만 초기화합니다.</p><button type="button" onClick={() => onReset("prep")}>준비 상태 초기화</button></article>
         <article><span>03</span><h3>수업 기록 삭제</h3><p>모둠 진행상태와 전송한 힌트 기록을 삭제하고 새 수업을 준비합니다.</p><button type="button" onClick={() => onReset("records")}>수업 기록 삭제</button></article>
       </div>
-      <div className="physical-reset-reminder"><b>실물 증거물은 자동 초기화되지 않습니다.</b><p>공폰 사진·파일 재복사, PIN 1017 확인, microSD에 사건팩 복사, IMG_2048.jpg 삭제, 새 파일 저장 중지, 복구 테스트를 교사가 별도로 수행해야 합니다.</p></div>
+      <div className="physical-reset-reminder"><b>실물 증거물은 자동 초기화되지 않습니다.</b><p>공폰 사진·파일 재복사, 준비센터의 조별 PIN표 확인, microSD에 사건팩 복사, IMG_2048.jpg 삭제, 새 파일 저장 중지, 복구 테스트를 교사가 별도로 수행해야 합니다.</p></div>
     </section>
   );
 }
